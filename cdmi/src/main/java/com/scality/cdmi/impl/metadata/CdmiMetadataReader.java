@@ -93,8 +93,8 @@ public class CdmiMetadataReader {
         } else if (CdmiTypes.CDMI_OBJECT.equals(objectType)) {
             return extractMetadata(conn.readMetadata(path, DATA_OBJECT_FIELD_NAMES));
         } else {
-        	throw new UnsupportedOperationException("Only containers and data objects are"
-        			+ " supported for reading metadata information.");
+            // FIXME: Allow reading other types.
+            return null;
         }
     }
 
