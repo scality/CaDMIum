@@ -63,6 +63,10 @@ public class FileMetadataImpl implements FileMetadata {
 	 * True if the underlying resource is a container.
 	 */
 	private final boolean isContainer;
+	/**
+	 * String representation of the CDMI metadata.
+	 */
+	private final String cdmiMetadata;
 
 	/**
 	 * Constructor.
@@ -79,12 +83,13 @@ public class FileMetadataImpl implements FileMetadata {
 	 *            true if the resource is a container
 	 */
 	public FileMetadataImpl(String key, long length, long lastmodified,
-			long lastAccessed, boolean isdContainer) {
+			long lastAccessed, boolean isdContainer, String cdmiMetadata) {
 		this.key = key;
 		this.length = length;
 		this.lastModified = lastmodified;
 		this.lastAccessed = lastAccessed;
 		this.isContainer = isdContainer;
+		this.cdmiMetadata = cdmiMetadata;
 	}
 
 	/**
@@ -100,6 +105,7 @@ public class FileMetadataImpl implements FileMetadata {
 		this.lastModified = meta.getMtime();
 		this.lastAccessed = meta.getAtime();
 		this.isContainer = meta.isContainer();
+		this.cdmiMetadata = meta.getMetadata();
 	}
 
 	@Override
@@ -125,5 +131,10 @@ public class FileMetadataImpl implements FileMetadata {
 	@Override
 	public boolean isContainer() {
 		return isContainer;
+	}
+
+	@Override
+	public String getCdmiMetadata() {
+		return cdmiMetadata;
 	}
 }

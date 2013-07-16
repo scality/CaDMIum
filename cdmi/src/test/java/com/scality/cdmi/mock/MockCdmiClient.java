@@ -271,9 +271,11 @@ public class MockCdmiClient implements CdmiClient {
     @Override
     public FileMetadata getMetadata(String key) throws IOException {
         if (remoteFiles.containsKey(key)) {
-            return new FileMetadataImpl(key, remoteFiles.get(key).length(), 100, 100, false);
+            return new FileMetadataImpl(key, remoteFiles.get(key).length(), 100, 100,
+            		false, "Mock Cdmi File Metadata");
         } else if (remoteDirs.contains(getContainerKey(key))) {
-            return new FileMetadataImpl(getContainerName(key), -1, 100, 100, true);
+            return new FileMetadataImpl(getContainerName(key), -1, 100, 100,
+            		true, "Mock Cdmi Container Metadata");
         } else {
             throw new FileNotFoundException();
         }
@@ -283,19 +285,21 @@ public class MockCdmiClient implements CdmiClient {
     public FileMetadata[] listMetadata(String key) throws IOException {
         ArrayList<FileMetadata> result = new ArrayList<FileMetadata>();
         if (remoteFiles.containsKey(key)) {
-            result.add(new FileMetadataImpl(key, remoteFiles.get(key).length(), 100, 100, false));
+            result.add(new FileMetadataImpl(key, remoteFiles.get(key).length(), 100, 100,
+            		false, "Mock Cdmi File Metadata"));
         } else {
             key = getContainerKey(key);
             if (remoteDirs.contains(key)) {
                 for (String filename : remoteFiles.keySet()) {
                     if (filename.startsWith(key)) {
                         result.add(new FileMetadataImpl(filename, remoteFiles.get(filename).length(),
-                                100, 100, false));
+                                100, 100, false, "Mock Cdmi File Metadata"));
                     }
                 }
                 for (String dirname : remoteDirs) {
                     if (dirname.startsWith(key) && !dirname.equals(key)) {
-                        result.add(new FileMetadataImpl(getContainerName(dirname), -1, 100, 100, true));
+                        result.add(new FileMetadataImpl(getContainerName(dirname), -1, 100, 100,
+                        		true, "Mock Cdmi Container Metadata"));
                     }
                 }
             }
