@@ -24,6 +24,25 @@
 		<connection>scm:git:git://github.com/scality/CaDMIum.git</connection>
 	</scm>
 
+	<developers>
+		<developer>
+			<id>ziadbizri</id>
+			<name>Ziad Bizri</name>
+			<email>ziad.bizri@ezako.com</email>
+			<roles><role>Core Dev</role></roles>
+		</developer>
+		<developer>
+			<id>julien101</id>
+			<name>Julien Muller</name>
+			<email>julien.muller@ezako.com</email>
+			<roles><role>Core Dev</role></roles>
+		</developer>
+		<developer>
+			<id>vrancurel</id>
+			<name>Vianney Rancurel</name>
+			<roles><role>Research Advisor</role></roles>
+		</developer>
+	</developers>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
