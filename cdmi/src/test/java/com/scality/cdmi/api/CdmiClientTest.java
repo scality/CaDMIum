@@ -611,4 +611,16 @@ public class CdmiClientTest {
 		Assert.assertTrue(client.exists(path));
 		Assert.assertTrue(client.delete(path, false));
 	}
+	
+	/**
+	 * Make sure we support special chars in filenames
+	 * @throws IOException
+	 */
+	@Test
+	public void testSpecialCharInFileNames() throws IOException {
+		String path = BASEDIR + "Encyclopædia";
+		Assert.assertTrue(client.touch(path));
+		Assert.assertTrue(client.exists(path));
+		Assert.assertTrue(client.delete(path, false));
+	}
 }
