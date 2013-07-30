@@ -1,0 +1,159 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.scality</groupId>
+	<artifactId>sofs.utils</artifactId>
+	<version>1.5.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>com.scality.sofs.utils</name>
+	<description>A notifier for distributed filesystem</description>
+	<url>https://github.com/scality/CaDMIum/sofs.utils</url>
+	<issueManagement>
+		<url>https://github.com/scality/CaDMIum/issues</url>
+		<system>GitHub Issues</system>
+	</issueManagement>
+
+	<licenses>
+		<license>
+			<url>https://github.com/scality/CaDMIum/blob/master/sofs.utils/LICENSE</url>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/scality/CaDMIum</url>
+		<connection>scm:git:git://github.com/scality/CaDMIum.git</connection>
+	</scm>
+
+	<developers>
+		<developer>
+			<id>ziadbizri</id>
+			<name>Ziad Bizri</name>
+			<email>ziad.bizri@ezako.com</email>
+			<roles><role>Core Dev</role></roles>
+		</developer>
+		<developer>
+			<id>julien101</id>
+			<name>Julien Muller</name>
+			<email>julien.muller@ezako.com</email>
+			<roles><role>Core Dev</role></roles>
+		</developer>
+		<developer>
+			<id>vrancurel</id>
+			<name>Vianney Rancurel</name>
+			<roles><role>Research Advisor</role></roles>
+		</developer>
+	</developers>
+
+	<properties>
+		<jettyVersion>8.1.11.v20130520</jettyVersion>
+		<javaCompilerVersion>1.6</javaCompilerVersion>
+		<javaRuntimeVersion>1.7</javaRuntimeVersion>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-server</artifactId>
+			<version>${jettyVersion}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>httpunit</groupId>
+			<artifactId>httpunit</artifactId>
+			<scope>test</scope>
+			<version>1.7</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<!-- This plugin is needed for the servlet example -->
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>${jettyVersion}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>java</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<mainClass>com.scality.sofs.utils.watch.example.RunServer</mainClass>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>${javaCompilerVersion}</source>
+					<target>${javaRuntimeVersion}</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.scality.sofs.utils.legacy.example.RunServer</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
