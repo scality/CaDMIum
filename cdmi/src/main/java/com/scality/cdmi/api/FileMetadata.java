@@ -68,4 +68,9 @@ public interface FileMetadata {
 	 * @return true if the underlying resource is a container.
 	 */
 	public boolean isContainer();
+	
+	/**
+	 * @return the metadata information sent by the CDMI server.
+	 */
+	public String getCdmiMetadata();
 }

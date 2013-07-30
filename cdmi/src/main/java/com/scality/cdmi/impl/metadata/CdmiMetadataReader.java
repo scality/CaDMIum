@@ -94,7 +94,8 @@ public class CdmiMetadataReader {
             return extractMetadata(conn.readMetadata(path, DATA_OBJECT_FIELD_NAMES));
         } else {
             // FIXME: Allow reading other types.
-            return null;
+        	throw new UnsupportedOperationException("Only containers and data objects are "
+        			+ "supported for reading metadata information; got " + objectType);
         }
     }
 

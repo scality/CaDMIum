@@ -52,6 +52,7 @@ import com.scality.cdmi.connector.CdmiTypes;
  *
  */
 public class CdmiMetadata {
+	private final String metadata;
     private final long size;
     private final long mtime;
     private final long atime;
@@ -72,7 +73,8 @@ public class CdmiMetadata {
      * @throws CdmiConnectionException
      */
     public CdmiMetadata(String metadata) throws CdmiConnectionException {
-        try {
+        this.metadata = metadata;
+    	try {
             JsonParser parser = new JsonFactory().createJsonParser(metadata);
             ObjectMapper m = new ObjectMapper();
             JsonNode root = m.readTree(parser);
@@ -83,7 +85,6 @@ public class CdmiMetadata {
             objectName = root.get("objectName").getTextValue().replace("<dot>", ".");
             objectType = root.get("objectType").getTextValue();
             objectID = root.get("objectID").getTextValue();
-            //parentURI = (root.has("parentURI")) ? root.get("parentURI").getTextValue() : "";
             
             JsonNode parentUriNode = root.get("parentURI");
             if(parentUriNode != null) {
@@ -119,7 +120,14 @@ public class CdmiMetadata {
     public boolean isContainer() {
         return isContainer;
     }
-
+    
+    /**
+     * @return
+     */
+    public String getMetadata() {
+    	return metadata;
+    }
+    
     /**
      * @return
      */
