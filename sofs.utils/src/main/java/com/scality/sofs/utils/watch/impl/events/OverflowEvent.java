@@ -31,46 +31,47 @@
  *
  * https://github.com/scality/CaDMIum
  */
-package com.scality.sofs.utils.watch;
+package com.scality.sofs.utils.watch.impl.events;
 
+import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Modifier;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchEvent.Kind;
-import java.util.Collection;
-import java.util.List;
 
 /**
- * 
- * A {@link WatchKey} interface for Sofs.
- * 
  * @author julien.muller@ezako.com for Scality
- * @since 1.7
  * 
  */
-public interface SofsWatchKey extends WatchKey {
+public class OverflowEvent implements WatchEvent<Object>, TimestampEvent {
+
+	double timestamp;
 
 	/**
-	 * Returns the state value of the WatchKey
-	 */
-	public boolean isReady();
-
-	/**
-	 * @return the eventkinds this watchkey is listening to
-	 */
-	public List<Kind<?>> getEventKinds();
-
-	/**
-	 * Add an event to this WatchKey
+	 * Default constructor Must at least provide a timestamp, because it
+	 * implements the TimestampEvent interface
 	 * 
-	 * @param event
+	 * @param timestamp
 	 */
-	public void addEvent(WatchEvent<?> event) throws OverflowException;
+	public OverflowEvent(double timestamp) {
+		this.timestamp = timestamp;
+	}
 
-	/**
-	 * Returns all Modifiers for this event
-	 * 
-	 * @return modifiers
-	 */
-	public Collection<Modifier> getModifiers();
+	@Override
+	public java.nio.file.WatchEvent.Kind<Object> kind() {
+		return StandardWatchEventKinds.OVERFLOW;
+	}
+
+	@Override
+	public int count() {
+		return 0;
+	}
+
+	@Override
+	public Path context() {
+		return null;
+	}
+
+	@Override
+	public double timestamp() {
+		return timestamp;
+	}
 }

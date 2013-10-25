@@ -31,46 +31,41 @@
  *
  * https://github.com/scality/CaDMIum
  */
-package com.scality.sofs.utils.watch;
+package com.scality.sofs.utils.watch.impl.events;
 
 import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Modifier;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchEvent.Kind;
-import java.util.Collection;
-import java.util.List;
+import java.util.Comparator;
 
 /**
+ * A comparator for TimestampEvent, comparing by timestamp.
  * 
- * A {@link WatchKey} interface for Sofs.
+ * If non-timestamp events are provided, this comparator will still be able to
+ * send a constant result avoiding to break its contract. Nevertheless, this
+ * result would be functionally useless and meaningless.
  * 
- * @author julien.muller@ezako.com for Scality
- * @since 1.7
+ * @see TimestampEvent
+ * @author julien.muller@ezako.com
  * 
  */
-public interface SofsWatchKey extends WatchKey {
+public class TimestampEventComparator implements Comparator<WatchEvent<?>> {
 
-	/**
-	 * Returns the state value of the WatchKey
-	 */
-	public boolean isReady();
+	@Override
+	public int compare(WatchEvent<?> event1, WatchEvent<?> event2) {
 
-	/**
-	 * @return the eventkinds this watchkey is listening to
-	 */
-	public List<Kind<?>> getEventKinds();
+		// Make sure the event types are ok
+		if (!(event1 instanceof TimestampEvent)
+				&& !(event2 instanceof TimestampEvent))
+			return 0;
 
-	/**
-	 * Add an event to this WatchKey
-	 * 
-	 * @param event
-	 */
-	public void addEvent(WatchEvent<?> event) throws OverflowException;
+		// Compare must be consistant
+		if (!(event1 instanceof TimestampEvent))
+			return -1;
 
-	/**
-	 * Returns all Modifiers for this event
-	 * 
-	 * @return modifiers
-	 */
-	public Collection<Modifier> getModifiers();
+		if (!(event2 instanceof TimestampEvent))
+			return 1;
+		// Finally a simple timestamp compare ...
+		return Double.compare(((TimestampEvent) event1).timestamp(),
+				((TimestampEvent) event2).timestamp());
+	}
+
 }

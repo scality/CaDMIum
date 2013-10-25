@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,7 @@ import org.junit.Test;
 import com.scality.sofs.utils.GeoSyncPayLoadProcessingException;
 import com.scality.sofs.utils.events.SofsEvent;
 import com.scality.sofs.utils.events.SofsEventTypes;
+import com.scality.sofs.utils.watch.SofsPath;
 import com.scality.sofs.utils.watch.SofsWatchService;
 
 /**
@@ -61,7 +63,7 @@ public class WatchPayLoadProcessorTest {
 	public static class MockWatchService implements SofsWatchService {
 
 		List<Event> events = new ArrayList<Event>();
-		
+
 		@Override
 		public void close() throws IOException {
 		}
@@ -91,19 +93,21 @@ public class WatchPayLoadProcessorTest {
 				SofsEvent originalEvent) throws InterruptedException {
 			events.add(new Event(path, kind, originalEvent));
 		}
-		
+
 		public List<Event> getEventsForTest() {
 			return events;
 		}
-		
+
 		public static class Event {
 			public String path;
+
 			public Event(String path, Kind<Path> kind, SofsEvent originalEvent) {
 				super();
 				this.path = path;
 				this.kind = kind;
 				this.originalEvent = originalEvent;
 			}
+
 			public Kind<Path> kind;
 			public SofsEvent originalEvent;
 		}
@@ -113,26 +117,34 @@ public class WatchPayLoadProcessorTest {
 				Kind<?>... events) throws InterruptedException {
 			return null;
 		}
+
+		@Override
+		public WatchKey register(SofsPath path, Kind<?>[] events,
+				Modifier... modifiers) throws InterruptedException {
+			return null;
+		}
 	}
-	
+
 	@Test
 	public void test() {
 		MockWatchService service = new MockWatchService();
 		WatchPayLoadProcessor processor = new WatchPayLoadProcessor(service);
-		
-		SofsEvent event = new SofsEvent(1, 231.321, "RINGKEY123", SofsEventTypes.CONTENT_MODIFIED, "/foo/bar/baz", null);
-		
+
+		SofsEvent event = new SofsEvent(1, 231.321, "RINGKEY123",
+				SofsEventTypes.CONTENT_MODIFIED, "/foo/bar/baz", null);
+
 		try {
 			processor.processEvent(event);
 		} catch (GeoSyncPayLoadProcessingException e) {
 			e.printStackTrace();
 			fail("Should not get an exception");
 		}
-		
+
 		assertEquals(event, service.getEventsForTest().get(0).originalEvent);
 		assertEquals("/foo/bar/baz", service.getEventsForTest().get(0).path);
-		assertEquals(StandardWatchEventKinds.ENTRY_MODIFY, service.getEventsForTest().get(0).kind);
-		
+		assertEquals(StandardWatchEventKinds.ENTRY_MODIFY, service
+				.getEventsForTest().get(0).kind);
+
 	}
-	
+
 }

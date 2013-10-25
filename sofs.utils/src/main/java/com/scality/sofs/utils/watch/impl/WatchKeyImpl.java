@@ -33,23 +33,31 @@
  */
 package com.scality.sofs.utils.watch.impl;
 
+import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.Watchable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.scality.sofs.utils.watch.SofsWatchService;
+import com.scality.sofs.utils.watch.OverflowException;
 import com.scality.sofs.utils.watch.SofsPath;
+import com.scality.sofs.utils.watch.SofsWatchEventModifier;
 import com.scality.sofs.utils.watch.SofsWatchKey;
+import com.scality.sofs.utils.watch.SofsWatchService;
+import com.scality.sofs.utils.watch.impl.events.OverflowEvent;
+import com.scality.sofs.utils.watch.impl.events.TimestampEvent;
+import com.scality.sofs.utils.watch.impl.events.TimestampEventComparator;
 
 /**
  * 
- * This class is an implementation class, designed to be used within
- * its package
+ * This class is an implementation class, designed to be used within its package
  * 
  * @author julien.muller@ezako.com for Scality
  * @since 1.7
@@ -57,7 +65,15 @@ import com.scality.sofs.utils.watch.SofsWatchKey;
  */
 class WatchKeyImpl implements SofsWatchKey {
 
-	/** Available states for this WatchKey, following java 1.7 {@link WatchKey} javadoc */
+	/**
+	 * The events list max size
+	 */
+	public final static int EVENT_LIST_MAX_SIZE = 100000;
+
+	/**
+	 * Available states for this WatchKey, following java 1.7 {@link WatchKey}
+	 * javadoc
+	 */
 	enum State {
 		READY, SIGNALLED
 	};
@@ -66,11 +82,12 @@ class WatchKeyImpl implements SofsWatchKey {
 	SofsPath path;
 
 	/**
-	 * A list of available events
-	 *  This is a thread safe list, since threads can get it through
-	 *  getEventKinds()
+	 * A list of available events This is a thread safe list, since threads can
+	 * get it through getEventKinds()
 	 */
 	List<Kind<?>> eventKinds = new CopyOnWriteArrayList<Kind<?>>();
+
+	List<Modifier> modifiers = new CopyOnWriteArrayList<Modifier>();
 
 	/** Events on this key */
 	volatile List<WatchEvent<?>> eventsList = new ArrayList<WatchEvent<?>>();
@@ -86,18 +103,25 @@ class WatchKeyImpl implements SofsWatchKey {
 
 	/**
 	 * Constructor
+	 * 
 	 * @param path
 	 * @param watchService
 	 * @param kinds
 	 */
-	WatchKeyImpl(SofsPath path, WatchService watchService, Kind<?>... kinds) {
+	WatchKeyImpl(SofsPath path, WatchService watchService, Kind<?>[] kinds,
+			Modifier... modifiers) {
 		this.path = path;
-		for (Kind<?> kind : kinds) {
+
+		// Add kinds if any
+		for (Kind<?> kind : kinds)
 			eventKinds.add(kind);
-		}
+
+		// Add modifiers if any
+		for (Modifier modifier : modifiers)
+			this.modifiers.add(modifier);
+
 		// Might throw a ClassCastException, which is actually what we expect in
-		// that
-		// case, specific enough for user
+		// that case, specific enough for user
 		this.watchService = (SofsWatchService) watchService;
 	}
 
@@ -111,11 +135,14 @@ class WatchKeyImpl implements SofsWatchKey {
 		// This must be synchronized to avoid race condition where 2 threads get
 		// the same eventsList to process.
 		// Maybe the compiler does optimize the following code
+		List<WatchEvent<?>> tempList = null;
 		synchronized (this) {
-			List<WatchEvent<?>> tempList = eventsList;
+			tempList = eventsList;
 			eventsList = new ArrayList<WatchEvent<?>>();
-			return tempList;
 		}
+		// Returns results ordered by timestamp
+		Collections.sort(tempList, new TimestampEventComparator());
+		return tempList;
 	}
 
 	@Override
@@ -161,6 +188,7 @@ class WatchKeyImpl implements SofsWatchKey {
 
 	/**
 	 * Hook to allow modification of "valid" information
+	 * 
 	 * @param valid
 	 */
 	void setValid(boolean valid) {
@@ -174,14 +202,35 @@ class WatchKeyImpl implements SofsWatchKey {
 	 * @param event
 	 */
 	@Override
-	public void addEvent(WatchEvent<?> event) {
-		eventsList.add(event);
-		state = State.SIGNALLED;
+	public void addEvent(WatchEvent<?> event) throws OverflowException {
+		if (eventsList.size() >= EVENT_LIST_MAX_SIZE) {
+			// Depends on strategy
+			if (modifiers
+					.contains(SofsWatchEventModifier.CLOSE_CONN_ON_OVERFLOW)) {
+				throw new OverflowException();
+			} else {
+				// Generate an overflow event on the event timestamp
+				if (!eventsList.get(eventsList.size() - 1).kind()
+						.equals(StandardWatchEventKinds.OVERFLOW)) {
+					eventsList.add(new OverflowEvent(((TimestampEvent) event)
+							.timestamp()));
+					state = State.SIGNALLED;
+				} // else, we already have an overflow event nothing more to say
+			}
+		} else {
+			eventsList.add(event);
+			state = State.SIGNALLED;
+		}
 	}
 
 	@Override
 	public List<Kind<?>> getEventKinds() {
 		return eventKinds;
+	}
+
+	@Override
+	public Collection<Modifier> getModifiers() {
+		return modifiers;
 	}
 
 	@Override
@@ -199,5 +248,5 @@ class WatchKeyImpl implements SofsWatchKey {
 	public boolean isReady() {
 		return State.READY.equals(state);
 	}
-	
+
 }

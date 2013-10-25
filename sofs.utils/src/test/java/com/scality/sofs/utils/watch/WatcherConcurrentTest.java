@@ -121,7 +121,7 @@ public class WatcherConcurrentTest {
 		loadRun(10, 100, 5);
 	}
 
-	private void loadRun(int producerThreads, int procuderTry, int consumThread) {
+	private void loadRun(int producerThreads, int producerTry, int consumThread) {
 		// Create watcher
 		Path foo = Factory.createPath(baseDir);
 		try {
@@ -138,7 +138,7 @@ public class WatcherConcurrentTest {
 
 		// Should be less than the thread pool size of server
 		// Also a limit on client ports available
-		List<Thread> threads = createProducers(producerThreads, procuderTry, 1);
+		List<Thread> threads = createProducers(producerThreads, producerTry, 1);
 
 		AtomicLong nb = new AtomicLong();
 		for (Thread t : createConsum(watcher, consumThread, 20, result, nb))
@@ -159,11 +159,11 @@ public class WatcherConcurrentTest {
 
 		System.out.println("Result:");
 		System.out.println(result.size() + " events watched of "
-				+ (10 * producerThreads * procuderTry));
+				+ (10 * producerThreads * producerTry));
 		System.out.println("result count: " + nb.longValue());
 		assertEquals(
 				"Some events were lost, you probably have a multithreading issue ...",
-				result.size(), 10 * producerThreads * procuderTry);
+				result.size(), 10 * producerThreads * producerTry);
 	}
 
 	private static List<Thread> createConsum(final SofsWatchService watcher,

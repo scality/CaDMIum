@@ -36,6 +36,7 @@ package com.scality.sofs.utils.watch.impl;
 import java.io.IOException;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,14 +47,16 @@ import java.util.concurrent.TimeUnit;
 
 import com.scality.sofs.utils.events.SofsEvent;
 import com.scality.sofs.utils.watch.Factory;
-import com.scality.sofs.utils.watch.SofsWatchService;
+import com.scality.sofs.utils.watch.OverflowException;
 import com.scality.sofs.utils.watch.SofsPath;
+import com.scality.sofs.utils.watch.SofsWatchEventModifier;
 import com.scality.sofs.utils.watch.SofsWatchKey;
+import com.scality.sofs.utils.watch.SofsWatchService;
 
 /**
  * 
- * An implementation of WatchService.
- * This class is intended for internal use only
+ * An implementation of WatchService. This class is intended for internal use
+ * only
  * 
  * @author julien.muller@ezako.com for Scality
  * 
@@ -97,12 +100,25 @@ public class WatchServiceImpl implements SofsWatchService, Requeuable {
 	@Override
 	public synchronized WatchKey register(SofsPath path, Kind<?>... events)
 			throws InterruptedException {
+		return register(path, events, (Modifier) null);
+	}
+
+	@Override
+	public WatchKey register(SofsPath path, Kind<?>[] events,
+			Modifier... modifiers) throws InterruptedException {
+
 		String p = path.getPath();
 		SofsWatchKey key = watching.get(p);
 		if (key == null) {
-			key = new WatchKeyImpl(path, this, events);
+			key = new WatchKeyImpl(path, this, events, modifiers);
 			watching.put(p, key);
 		} else {
+			// Make sure it is registered for all modifiers
+			for (Modifier modifier : modifiers) {
+				if (!key.getModifiers().contains(modifier)) {
+					key.getModifiers().add(modifier);
+				}
+			}
 			// Make sure it is registered for the same events
 			for (Kind<?> event : events) {
 				if (!key.getEventKinds().contains(event)) {
@@ -118,6 +134,8 @@ public class WatchServiceImpl implements SofsWatchService, Requeuable {
 	public synchronized void unregister(WatchKey key)
 			throws InterruptedException {
 		// If the key is in the queue we will it there
+		// If the WatchKey is not of a supported type,
+		// throws a ClassCastException, pretty explicit
 		SofsPath path = (SofsPath) key.watchable();
 		String p = path.getPath();
 		if (watching.containsKey(p)) {
@@ -127,41 +145,57 @@ public class WatchServiceImpl implements SofsWatchService, Requeuable {
 
 	@Override
 	public void addEvent(String path, Kind<java.nio.file.Path> kind,
-			SofsEvent originalEvent) throws InterruptedException {
+			SofsEvent originalEvent) throws InterruptedException,
+			OverflowException {
 
 		// first we need to construct a parent path
-		SofsPath initialPath = (SofsPath)Factory.createPath(path);
-
+		SofsPath initialPath = (SofsPath) Factory.createPath(path);
 		SofsPath watchPath = (SofsPath) initialPath.getParent();
 
-		// If we are watching this event
-		if (watching.containsKey(watchPath.getPath())) {
-			// Add this event to queue
-			SofsWatchKey key = (SofsWatchKey) watching.get(watchPath.getPath());
-			synchronized (key) {
-				if (key.getEventKinds().contains(kind)) {
-					// create a relative path
-					SofsPath relativePath = (SofsPath) watchPath
-							.relativize(initialPath);
-
-					// This kind is watch by this key, add it
-					WatchEvent<java.nio.file.Path> watchEvent = new WatchEventImpl(
-							kind, relativePath, originalEvent);
-
-					boolean needToAddToQueue = key.isReady();
-					key.addEvent(watchEvent);
-
-					// If the key is ready, it is added to the queue
-					if (needToAddToQueue)
-						queue.put(key);
-					// else it means it is already in the queue or being
-					// processed, and will be returned to the queue after
-					// reset
-				}
-			}
-
+		// Identify if this event is of interest
+		for (SofsWatchKey keyTested : watching.values()) {
+			// Depends on strategy.
+			if (keyTested.getModifiers().contains(
+					SofsWatchEventModifier.FILE_TREE)
+					&& initialPath.startsWith((SofsPath) keyTested.watchable())) {
+				// Recursive check strategy
+				addEventToQueue(((SofsPath) keyTested.watchable()),
+						initialPath, kind, originalEvent, keyTested);
+			} else if (keyTested.watchable().equals(watchPath)) {
+				// Default Strategy, only first level watching
+				addEventToQueue(watchPath, initialPath, kind, originalEvent,
+						keyTested);
+			} // else we are not watching this path so this event is ignored
 		}
-		// else we are not watching this path so it has to be ignored
+
+	}
+
+	private void addEventToQueue(SofsPath watchPath, SofsPath initialPath,
+			Kind<java.nio.file.Path> kind, SofsEvent originalEvent,
+			SofsWatchKey key) throws InterruptedException, OverflowException {
+
+		// Add this event to queue
+		synchronized (key) {
+			if (key.getEventKinds().contains(kind)) {
+				// create a relative path
+				SofsPath relativePath = (SofsPath) watchPath
+						.relativize(initialPath);
+
+				// This kind is watch by this key, add it
+				WatchEvent<java.nio.file.Path> watchEvent = new WatchEventImpl(
+						kind, relativePath, originalEvent);
+
+				boolean needToAddToQueue = key.isReady();
+				key.addEvent(watchEvent);
+
+				// If the key is ready, it is added to the queue
+				if (needToAddToQueue)
+					queue.put(key);
+				// else it means it is already in the queue or being
+				// processed, and will be returned to the queue after
+				// reset
+			}
+		}
 	}
 
 	@Override

@@ -34,6 +34,7 @@
 package com.scality.sofs.utils.watch;
 
 import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 
@@ -42,37 +43,56 @@ import com.scality.sofs.utils.events.SofsEvent;
 /**
  * @author julien.muller@ezako.com for Scality
  * @since 1.7
- *
+ * 
  */
 public interface SofsWatchService extends WatchService {
 
 	/**
-	 * Registers a path to this watchService
-	 * If already registered, 
-	 * Check if the events are same and add if necessary
-	 * Otherwise, this has no effect
+	 * Registers a path to this watchService If already registered, Check if the
+	 * events are same and add if necessary Otherwise, this has no effect
 	 * 
 	 * @param path
 	 * @param events
 	 * @return the watchkey associated to this path
 	 * @throws InterruptedException
 	 */
-	public WatchKey register(SofsPath path, Kind<?>... events) throws InterruptedException;
-	
+	public WatchKey register(SofsPath path, Kind<?>... events)
+			throws InterruptedException;
+
 	/**
-	 * Unregister a key from this service.
-	 * If not registered, this has no effect
+	 * Registers a path to this watchService If already registered, Check if the
+	 * events are same and add if necessary Otherwise, this has no effect
+	 * 
+	 * @param path
+	 * @param events
+	 *            kind you want to watch with this key
+	 * @param modifiers
+	 *            specific modifiers to change the default watching behavior:
+	 * @see com.scality.sofs.utils.watch.SofsWatchEventModifier
+	 * @return the watchkey associated to this path
+	 * @throws InterruptedException
+	 */
+	public WatchKey register(SofsPath path, Kind<?>[] events,
+			Modifier... modifiers) throws InterruptedException;
+
+	/**
+	 * Unregister a key from this service. If not registered, this has no effect
+	 * 
 	 * @param key
 	 * @throws InterruptedException
 	 */
 	public void unregister(WatchKey key) throws InterruptedException;
 
 	/**
-	 * When an event occurs, it is added to the WatchService
-	 * with this method
-	 * @param path path to be used
-	 * @param kind the kind of the event
+	 * When an event occurs, it is added to the WatchService with this method
+	 * 
+	 * @param path
+	 *            path to be used
+	 * @param kind
+	 *            the kind of the event
 	 */
-	public void addEvent(String path, Kind<java.nio.file.Path> kind, SofsEvent originalEvent) throws InterruptedException;
-	
+	public void addEvent(String path, Kind<java.nio.file.Path> kind,
+			SofsEvent originalEvent) throws InterruptedException,
+			OverflowException;
+
 }

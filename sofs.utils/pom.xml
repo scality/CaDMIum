@@ -4,7 +4,7 @@
 
 	<groupId>com.scality</groupId>
 	<artifactId>sofs.utils</artifactId>
-	<version>1.5.1-SNAPSHOT</version>
+	<version>1.5.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>com.scality.sofs.utils</name>

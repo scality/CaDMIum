@@ -33,6 +33,8 @@
  */
 package com.scality.sofs.utils;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * 
  * An exception while processing a payload
@@ -45,6 +47,9 @@ package com.scality.sofs.utils;
 public class GeoSyncPayLoadProcessingException extends Exception {
 
 	private static final long serialVersionUID = 1L;
+
+	// Error code, preferably matching HTTP. Defaults to 500 if nothing better
+	protected int errorCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
 	/**
 	 * Default Constructor
@@ -79,6 +84,24 @@ public class GeoSyncPayLoadProcessingException extends Exception {
 	 */
 	public GeoSyncPayLoadProcessingException(String message, Throwable cause) {
 		super(message, cause);
+	}
+
+	/**
+	 * @param message
+	 * @param cause
+	 * @param errorCode
+	 */
+	public GeoSyncPayLoadProcessingException(String message, Throwable cause,
+			int errorCode) {
+		super(message, cause);
+		this.errorCode = errorCode;
+	}
+
+	/**
+	 * An error code for more details. Preferably matching httperrors.
+	 */
+	public int getErrorCode() {
+		return errorCode;
 	}
 
 }

@@ -51,14 +51,14 @@ public class PathTest {
 		assertTrue(p.isAbsolute());
 		assertEquals("/", p.path);
 	}
-	
+
 	@Test
 	public void simpleAbsolute() {
 		SofsPath p = new SofsPath("/foo/bar");
 		assertTrue(p.isAbsolute());
 		assertEquals("/foo/bar", p.path);
 	}
-	
+
 	@Test
 	public void cleanUrl() {
 		SofsPath p = new SofsPath("/foo/bar/");
@@ -66,14 +66,14 @@ public class PathTest {
 		System.out.println(p.path);
 		assertEquals("/foo/bar", p.path);
 	}
-	
+
 	@Test
 	public void simpleRelative() {
 		SofsPath p = new SofsPath("foo/bar");
 		assertFalse(p.isAbsolute());
 		assertEquals("foo/bar", p.getPath());
 	}
-	
+
 	@Test
 	public void fileName() {
 		SofsPath p = new SofsPath("foo/bar.h");
@@ -103,5 +103,44 @@ public class PathTest {
 		SofsPath p = new SofsPath("/foo/bar/");
 		SofsPath p2 = new SofsPath("/foo/bar/baz/buz");
 		assertEquals(new SofsPath("baz/buz"), p.relativize(p2));
+		p = new SofsPath("/foo/");
+		p2 = new SofsPath("/foo/bar/baz");
+		assertEquals(new SofsPath("bar/baz"), p.relativize(p2));
 	}
+
+	@Test
+	public void startWith() {
+		SofsPath p = new SofsPath("/foo/bar/");
+		SofsPath p2 = new SofsPath("/foo/bar/baz/buz");
+		assertTrue(p2.startsWith(p));
+		assertTrue(p.startsWith(p));
+		assertFalse(p.startsWith(p2));
+		assertFalse(p.startsWith((SofsPath) null));
+	}
+	
+	@Test
+	public void resolve() {
+		SofsPath p = new SofsPath("/foo/bar");
+		assertEquals(new SofsPath("/foo/bar"), p.resolve(""));
+		assertEquals(new SofsPath("/foo/bar"), p.resolve(new SofsPath("")));
+		assertEquals(new SofsPath("/foo/bar"), p.resolve((SofsPath)null));
+		SofsPath p2 = new SofsPath("/baz");
+		assertEquals(p.resolve(p2), p2);
+		p2 = new SofsPath("baz");
+		assertEquals(p.resolve(p2), new SofsPath("/foo/bar/baz"));
+		p2 = new SofsPath("baz/");
+		assertEquals(p.resolve(p2), new SofsPath("/foo/bar/baz"));
+		p2 = new SofsPath("/");
+		assertEquals(p.resolve(p2), p2);
+		p = new SofsPath("/foo/bar/");
+		p2 = new SofsPath("baz/");
+		assertEquals(p.resolve(p2), new SofsPath("/foo/bar/baz"));
+		
+		p = new SofsPath("");
+		assertEquals(p2, p.resolve(p2));
+		
+		p = new SofsPath("bar/baz/foo");
+		assertEquals(new SofsPath("bar/baz/foo/baz"), p.resolve(p2));
+	}
+	
 }

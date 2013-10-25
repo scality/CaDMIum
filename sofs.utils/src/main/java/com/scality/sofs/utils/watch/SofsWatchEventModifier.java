@@ -33,44 +33,26 @@
  */
 package com.scality.sofs.utils.watch;
 
-import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Modifier;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchEvent.Kind;
-import java.util.Collection;
-import java.util.List;
 
-/**
- * 
- * A {@link WatchKey} interface for Sofs.
- * 
- * @author julien.muller@ezako.com for Scality
- * @since 1.7
- * 
- */
-public interface SofsWatchKey extends WatchKey {
+public enum SofsWatchEventModifier implements Modifier {
 
 	/**
-	 * Returns the state value of the WatchKey
+	 * The FILE_TREE modifier makes a WatchKey recursive. Without this modifier,
+	 * a file watch is shallow: For a watched directory foo, WatchEvents are
+	 * only generated for direct children such as foo/bar or foo/oof. For a
+	 * changes to files in a subdirectory of foo, such as foo/adir/file will
+	 * only be reported if the FILE_TREE modifier is specified. Note that this
+	 * modifier is only available on the SOFS platform. If specified on other
+	 * platforms, Path.register() will throw an UnsupportedOperationException.
 	 */
-	public boolean isReady();
+	FILE_TREE,
 
 	/**
-	 * @return the eventkinds this watchkey is listening to
+	 * The CLOSE_CONN_ON_OVERFLOW modifier indicates that the WatchKey will send
+	 * an error in case of overflow of its eventsList. In the default behavior,
+	 * it will simply add an overflow event and miss events until slots are
+	 * available in the eventsList
 	 */
-	public List<Kind<?>> getEventKinds();
-
-	/**
-	 * Add an event to this WatchKey
-	 * 
-	 * @param event
-	 */
-	public void addEvent(WatchEvent<?> event) throws OverflowException;
-
-	/**
-	 * Returns all Modifiers for this event
-	 * 
-	 * @return modifiers
-	 */
-	public Collection<Modifier> getModifiers();
+	CLOSE_CONN_ON_OVERFLOW,
 }

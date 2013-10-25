@@ -31,46 +31,23 @@
  *
  * https://github.com/scality/CaDMIum
  */
-package com.scality.sofs.utils.watch;
-
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Modifier;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchEvent.Kind;
-import java.util.Collection;
-import java.util.List;
+package com.scality.sofs.utils.watch.impl.events;
 
 /**
+ * This interface is a common feature for Events. Events implementing this
+ * interface must provide a timestamp.
  * 
- * A {@link WatchKey} interface for Sofs.
+ * This kind of events maps very well to most filesystem events.
  * 
  * @author julien.muller@ezako.com for Scality
- * @since 1.7
  * 
  */
-public interface SofsWatchKey extends WatchKey {
+public interface TimestampEvent {
 
 	/**
-	 * Returns the state value of the WatchKey
-	 */
-	public boolean isReady();
-
-	/**
-	 * @return the eventkinds this watchkey is listening to
-	 */
-	public List<Kind<?>> getEventKinds();
-
-	/**
-	 * Add an event to this WatchKey
+	 * Returns the timestamp of this event
 	 * 
-	 * @param event
+	 * @return
 	 */
-	public void addEvent(WatchEvent<?> event) throws OverflowException;
-
-	/**
-	 * Returns all Modifiers for this event
-	 * 
-	 * @return modifiers
-	 */
-	public Collection<Modifier> getModifiers();
+	public double timestamp();
 }

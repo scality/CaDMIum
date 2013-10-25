@@ -37,6 +37,7 @@ import java.nio.file.Path;
 
 import com.scality.sofs.utils.events.SofsEvent;
 import com.scality.sofs.utils.watch.SofsWatchEvent;
+import com.scality.sofs.utils.watch.impl.events.TimestampEvent;
 
 /**
  * This is a watchEvent implementation
@@ -48,7 +49,7 @@ import com.scality.sofs.utils.watch.SofsWatchEvent;
  * @since 1.7
  * 
  */
-class WatchEventImpl implements SofsWatchEvent {
+class WatchEventImpl implements SofsWatchEvent, TimestampEvent {
 
 	/** the event kind */
 	Kind<Path> kind;
@@ -59,12 +60,12 @@ class WatchEventImpl implements SofsWatchEvent {
 
 	/**
 	 * Constructor
+	 * 
 	 * @param kind
 	 * @param relativePath
 	 * @param originalEvent
 	 */
-	WatchEventImpl(Kind<Path> kind, Path relativePath,
-			SofsEvent originalEvent) {
+	WatchEventImpl(Kind<Path> kind, Path relativePath, SofsEvent originalEvent) {
 		this.kind = kind;
 		this.relativePath = relativePath;
 		this.originalEvent = originalEvent;
@@ -96,5 +97,9 @@ class WatchEventImpl implements SofsWatchEvent {
 		return originalEvent;
 	}
 
-	
+	@Override
+	public double timestamp() {
+		return originalEvent.getTimestamp();
+	}
+
 }

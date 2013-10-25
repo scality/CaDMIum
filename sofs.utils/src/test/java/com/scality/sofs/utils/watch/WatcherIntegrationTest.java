@@ -69,8 +69,6 @@ public class WatcherIntegrationTest {
 	 * This test runs a real server and system outs but, does not really check
 	 * its results.
 	 * 
-	 * TODO validate the test result
-	 * 
 	 * @throws IOException
 	 * @throws SAXException
 	 */
@@ -103,6 +101,7 @@ public class WatcherIntegrationTest {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
+
 				while (true) {
 					try {
 						WatchKey nextKey = watcher.poll(100,
@@ -124,7 +123,7 @@ public class WatcherIntegrationTest {
 								System.out.println(sofsEvent);
 								results.add(sofsEvent);
 							}
-
+							nextKey.reset();
 						}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -138,7 +137,8 @@ public class WatcherIntegrationTest {
 				+ "1:1364220648.847604:32D745056A8E9D6943CBF0000000010200000021:MKNOD:::/foo/include/paths.h\n"
 				+ "1:1364220648.848787:32D745056A8E9D6943CBF0000000010200000022:ATTR_MODIFIED:::/foo/include/paths.h\n"
 				+ "1:1364220648.881096:0F754106F388BFABF4B750000000010200000023:MKNOD:::/foo/include/unctrl.h\n"
-				+ "1:1364220648.860763:32D745056A8E9D6943CBF0000000010200000024:CONTENT_MODIFIED:::/foo/include/paths.h"
+				+ "1:1364220648.860763:32D745056A8E9D6943CBF0000000010200000024:CONTENT_MODIFIED:::/foo/include/paths.h\n"
+				+ "1:1364220648.4:32D745056A8E9D6943CBF0000000010200000024:CONTENT_MODIFIED:::/bar"
 				+ "\" }";
 
 		WebConversation wc = new WebConversation();
@@ -154,6 +154,8 @@ public class WatcherIntegrationTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		Assert.assertEquals(5, results.size());
+		// Results are ordered by timestamp
 		Assert.assertEquals(new SofsEvent(1, 1364220640.307028,
 				"889410000CB25F0CC9CF43000000010200000020",
 				SofsEventTypes.MKDIR, "/foo/include", null), results.get(0));
@@ -165,18 +167,20 @@ public class WatcherIntegrationTest {
 				"32D745056A8E9D6943CBF0000000010200000022",
 				SofsEventTypes.ATTR_MODIFIED, "/foo/include/paths.h", null),
 				results.get(2));
-		Assert.assertEquals(new SofsEvent(1, 1364220648.881096,
-				"0F754106F388BFABF4B750000000010200000023",
-				SofsEventTypes.MKNOD, "/foo/include/unctrl.h", null), results
-				.get(3));
 		Assert.assertEquals(new SofsEvent(1, 1364220648.860763,
 				"32D745056A8E9D6943CBF0000000010200000024",
 				SofsEventTypes.CONTENT_MODIFIED, "/foo/include/paths.h", null),
-				results.get(4));
+				results.get(3));
+		Assert.assertEquals(new SofsEvent(1, 1364220648.881096,
+				"0F754106F388BFABF4B750000000010200000023",
+				SofsEventTypes.MKNOD, "/foo/include/unctrl.h", null), results
+				.get(4));
 
-		System.out.println("success");
 	}
 
+	/**
+	 * Test payload generation
+	 */
 	@Test
 	public void genTest() {
 
@@ -230,4 +234,116 @@ public class WatcherIntegrationTest {
 			e.printStackTrace();
 		}
 	}
+
+	@Test
+	public void realisticRecursive() throws IOException, SAXException {
+
+		final SofsWatchService watcher = Factory.createService();
+
+		final List<SofsEvent> results = new CopyOnWriteArrayList<SofsEvent>();
+
+		Server server = GeoSyncServer.createServer(port,
+				Factory.createProcessor(watcher));
+		System.out.println("Running server on port " + port + "...");
+
+		try {
+			server.start();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		Path p1 = Factory.createPath("/foo");
+
+		@SuppressWarnings("unchecked")
+		WatchEvent.Kind<Path>[] kinds = new WatchEvent.Kind[3];
+		kinds[0] = StandardWatchEventKinds.ENTRY_CREATE;
+		kinds[1] = StandardWatchEventKinds.ENTRY_DELETE;
+		kinds[2] = StandardWatchEventKinds.ENTRY_MODIFY;
+
+		p1.register(watcher, kinds, SofsWatchEventModifier.FILE_TREE);
+
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+
+				try {
+					// Sleep to make sure we generate all event in one shot
+					// (reproductive event order by timestamp)
+					Thread.sleep(200);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+
+				while (true) {
+					try {
+						WatchKey nextKey = watcher.poll(10,
+								TimeUnit.MILLISECONDS);
+
+						// We are only sysouting the event, implementations can
+						// use the nextEvent object to do much more
+						if (nextKey != null) {
+
+							synchronized (nextKey) {
+								// Assert.assertEquals(key, nextKey);
+								List<WatchEvent<?>> events = nextKey
+										.pollEvents();
+
+								if (events.size() == 0)
+									Assert.fail("We should have an event");
+								for (WatchEvent<?> event : events) {
+									System.out.println(event);
+									// get the sofsevent
+									SofsEvent sofsEvent = ((SofsWatchEvent) event)
+											.getOriginalEvent();
+									System.out.println(sofsEvent);
+									results.add(sofsEvent);
+								}
+
+							}
+							nextKey.reset();
+						}
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}).start();
+
+		String payLoad = "{ \"Method\" : \"scality\", \"scalitylog\": \""
+				+ "1:1364220640.1:889410000CB25F0CC9CF43000000010200000020:MKDIR:::/foo/include\n"
+				+ "1:1364220640.3:889410000CB25F0CC9CF43000000010200000025:MKDIR:::/foo/include/bar/baz\n"
+				+ "1:1364220640.2:32D745056A8E9D6943CBF0000000010200000021:MKNOD:::/foo/include/paths.h\n"
+				+ "1:1364220648.4:32D745056A8E9D6943CBF0000000010200000024:CONTENT_MODIFIED:::/bar"
+				+ "\" }";
+
+		WebConversation wc = new WebConversation();
+		InputStream in = new ByteArrayInputStream(payLoad.getBytes());
+		PostMethodWebRequest request = new PostMethodWebRequest(
+				"http://localhost:" + port, in, "application/json");
+
+		WebResponse response = wc.getResponse(request);
+		Assert.assertEquals(200, response.getResponseCode());
+
+		try {
+			// Make sure all events are added
+			Thread.sleep(200);
+			server.stop();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		// Results are ordered by timestamp
+		Assert.assertEquals(3, results.size());
+		Assert.assertEquals(new SofsEvent(1, 1364220640.1,
+				"889410000CB25F0CC9CF43000000010200000020",
+				SofsEventTypes.MKDIR, "/foo/include", null), results.get(0));
+		Assert.assertEquals(new SofsEvent(1, 1364220640.2,
+				"32D745056A8E9D6943CBF0000000010200000021",
+				SofsEventTypes.MKNOD, "/foo/include/paths.h", null), results
+				.get(1));
+		Assert.assertEquals(new SofsEvent(1, 1364220640.3,
+				"889410000CB25F0CC9CF43000000010200000025",
+				SofsEventTypes.MKDIR, "/foo/include/bar/baz", null), results
+				.get(2));
+	}
+
 }

@@ -48,25 +48,27 @@ import java.util.Iterator;
 import org.apache.commons.io.FilenameUtils;
 
 /**
- *
- * This is a very limited implementation of java.nio.file.Path
- * providing only mandatory methods for register / unregister
- * to a WatchService
+ * 
+ * This is a very limited implementation of java.nio.file.Path providing only
+ * mandatory methods for register / unregister to a WatchService
  * 
  * Create a SofsPath object through:
+ * 
  * <pre><code>
  * SofsPath p = com.scality.sofs.utils.watch.Factory.createPath("/foo/bar");
- * </code><pre>
- *
+ * </code>
+ * 
+ * <pre>
+ * 
  * @author julien.muller@ezako.com for Scality
- *
+ * 
  * @since 1.7
- *
+ * 
  */
 public class SofsPath implements Watchable, java.nio.file.Path {
 
 	private static final String SEPARATOR = "/";
-	
+
 	protected String path;
 	protected boolean absolute;
 
@@ -83,35 +85,45 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 	SofsPath(String path) {
 		// Normalization is an extensive algorithm, commons.io
 		this.path = FilenameUtils.normalizeNoEndSeparator(path);
-		
-		if (this.path==null) {
-			throw new NullPointerException("The path provided is null after normalization");
+
+		if (this.path == null) {
+			throw new NullPointerException(
+					"The path provided is null after normalization");
 		}
-		
-		if (this.path.startsWith(SEPARATOR)) absolute = true;
-		else absolute = false;
+
+		if (this.path.startsWith(SEPARATOR))
+			absolute = true;
+		else
+			absolute = false;
 	}
 
 	@Override
 	public WatchKey register(WatchService watcher, Kind<?>[] events,
 			Modifier... modifiers) throws IOException {
-		// TODO Take modifier into account
-		// but std javadoc 7 says: This release does not define any <em>standard</em> modifiers
-		return register(watcher, events);
+		// Only modifiers currently supported are SofsWatchEventModifier
+		for (Modifier modifier : modifiers)
+			if (!(modifier instanceof SofsWatchEventModifier))
+				throw new UnsupportedOperationException(
+						"Only SofsWatchEventModifier modifier is supported by this type");
+
+		if (!(watcher instanceof SofsWatchService))
+			throw new UnsupportedOperationException(
+					"Only GeoSyncWatchService watcher is supported by this type");
+		try {
+			return ((SofsWatchService) watcher).register(this, events,
+					modifiers);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(
+					"InterruptedException while registering the key", e);
+		}
 	}
 
 	@Override
 	public WatchKey register(WatchService watcher, Kind<?>... events)
 			throws IOException {
-		if (!(watcher instanceof SofsWatchService)) 
-			throw new UnsupportedOperationException("Only GeoSyncWatchService watcher is supported by this type");
-		try {
-			return ((SofsWatchService)watcher).register(this, events);
-		} catch (InterruptedException e) {
-			throw new RuntimeException("InterruptedException while registering the key", e);
-		}
+		return register(watcher, events, new Modifier[0]);
 	}
-	
+
 	@Override
 	public FileSystem getFileSystem() {
 		throw new UnsupportedOperationException("This is not implemented");
@@ -129,14 +141,16 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 
 	@Override
 	public java.nio.file.Path getFileName() {
-		return new SofsPath(path.substring(path.lastIndexOf(SEPARATOR)+1, path.length()));
+		return new SofsPath(path.substring(path.lastIndexOf(SEPARATOR) + 1,
+				path.length()));
 	}
 
 	@Override
 	public java.nio.file.Path getParent() {
 		// Might already be the root path
-		if (SEPARATOR.equals(path)) return null;
-		
+		if (SEPARATOR.equals(path))
+			return null;
+
 		return new SofsPath(path.substring(0, path.lastIndexOf(SEPARATOR)));
 	}
 
@@ -157,12 +171,17 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 
 	@Override
 	public boolean startsWith(java.nio.file.Path other) {
-		throw new UnsupportedOperationException("This is not implemented");
+		// Only comparable to path of type sofs
+		if (!(other instanceof SofsPath))
+			return false;
+
+		return this.path.startsWith(((SofsPath) other).getPath());
 	}
 
 	@Override
 	public boolean startsWith(String other) {
-		throw new UnsupportedOperationException("This is not implemented");
+		SofsPath otherPath = new SofsPath(other);
+		return startsWith(otherPath);
 	}
 
 	@Override
@@ -180,14 +199,48 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 		throw new UnsupportedOperationException("This is not implemented");
 	}
 
+	/*
+	 * @see java.nio.file.Path#resolve(java.nio.file.Path)
+	 * 
+	 * If the other parameter is an absolute path then this method trivially
+	 * returns other. If other is an empty path then this method trivially
+	 * returns this path. Otherwise this method considers this path to be a
+	 * directory and resolves the given path against this path. In the simplest
+	 * case, the given path does not have a root component, in which case this
+	 * method joins the given path to this path and returns a resulting path
+	 * that ends with the given path. Where the given path has a root component
+	 * then resolution is highly implementation dependent and therefore
+	 * unspecified.
+	 */
 	@Override
 	public java.nio.file.Path resolve(java.nio.file.Path other) {
-		throw new UnsupportedOperationException("This is not implemented");
+		if (other == null)
+			return this.clone();
+		// if not SofsPath returns a classcastexception on purpose
+		SofsPath otherPath = (SofsPath) other;
+
+		// If the other parameter is an absolute path then this method trivially
+		// returns other
+		if (otherPath.isAbsolute())
+			return otherPath.clone();
+
+		// If other is an empty path then this method returns this path
+		if ((otherPath.path == null) || ("".equals(otherPath))) {
+			return this.clone();
+		}
+
+		if (this.path == null || "".equals(this.path))
+			return otherPath.clone();
+
+		// Otherwise this method considers this path to be a directory and
+		// resolves the given path against this path
+		return new SofsPath(this.path + SEPARATOR + otherPath.path);
 	}
 
 	@Override
 	public java.nio.file.Path resolve(String other) {
-		throw new UnsupportedOperationException("This is not implemented");
+		SofsPath otherPath = new SofsPath(other);
+		return resolve(otherPath);
 	}
 
 	@Override
@@ -202,24 +255,29 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 
 	@Override
 	public java.nio.file.Path relativize(java.nio.file.Path other) {
-		// if this path is "/a/b" and the given path is "/a/b/c/d" then the resulting relative path would be "c/d"
-		if ( !(other instanceof SofsPath) ) 
-			throw new IllegalArgumentException("The other path provided is not an instance of " + getClass().getName());
-		
+		// if this path is "/a/b" and the given path is "/a/b/c/d" then the
+		// resulting relative path would be "c/d"
+		if (!(other instanceof SofsPath))
+			throw new IllegalArgumentException(
+					"The other path provided is not an instance of "
+							+ getClass().getName());
+
 		SofsPath otherPath = (SofsPath) other;
-		if (!otherPath.absolute) 
-			throw new IllegalArgumentException("The other path provided is not absolute");
-		if (!this.absolute) 
+		if (!otherPath.absolute)
+			throw new IllegalArgumentException(
+					"The other path provided is not absolute");
+		if (!this.absolute)
 			throw new IllegalArgumentException("This path is not absolute");
-		
-		String newPath = otherPath.path.replaceFirst( this.path , "");
-		
+
+		String newPath = otherPath.path.replaceFirst(this.path, "");
+
 		if (otherPath.path.equals(newPath)) {
-			throw new IllegalArgumentException("The 2 paths provided cannot be relativized");
+			throw new IllegalArgumentException(
+					"The 2 paths provided cannot be relativized");
 		}
-		
+
 		String relativeNewPath = newPath.substring(1);
-		
+
 		return new SofsPath(relativeNewPath);
 	}
 
@@ -253,11 +311,12 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 	public int compareTo(java.nio.file.Path other) {
 		throw new UnsupportedOperationException("This is not implemented");
 	}
-	
+
 	@Override
 	public boolean equals(Object other) {
-		if ( !(other instanceof SofsPath)) return false;
-		SofsPath otherPath = (SofsPath)other;
+		if (!(other instanceof SofsPath))
+			return false;
+		SofsPath otherPath = (SofsPath) other;
 		return this.path.equals(otherPath.path);
 	}
 
@@ -265,5 +324,10 @@ public class SofsPath implements Watchable, java.nio.file.Path {
 	public String toString() {
 		return "[SofsPath: " + path + "]";
 	}
-	
+
+	@Override
+	protected SofsPath clone() {
+		return new SofsPath(this.path);
+	}
+
 }

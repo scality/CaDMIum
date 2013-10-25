@@ -37,9 +37,12 @@ import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
 import java.util.List;
 
+import javax.servlet.http.HttpServletResponse;
+
 import com.scality.sofs.utils.GeoSyncPayLoadProcessingException;
 import com.scality.sofs.utils.events.AbstractEventPayLoadProcessor;
 import com.scality.sofs.utils.events.SofsEvent;
+import com.scality.sofs.utils.watch.OverflowException;
 import com.scality.sofs.utils.watch.SofsWatchService;
 
 /**
@@ -54,6 +57,7 @@ public class WatchPayLoadProcessor extends AbstractEventPayLoadProcessor {
 
 	/**
 	 * Constructor
+	 * 
 	 * @param watchService
 	 */
 	public WatchPayLoadProcessor(SofsWatchService watchService) {
@@ -88,6 +92,11 @@ public class WatchPayLoadProcessor extends AbstractEventPayLoadProcessor {
 			// Should not arrive here
 			throw new GeoSyncPayLoadProcessingException(
 					"Unable to clone the sofsevent", e);
+		} catch (OverflowException e) {
+			// Not able to process this event, because of an overflow
+			throw new GeoSyncPayLoadProcessingException(
+					"Unable to clone the sofsevent", e,
+					HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 		}
 	}
 

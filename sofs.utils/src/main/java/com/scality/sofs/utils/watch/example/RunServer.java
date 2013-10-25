@@ -116,10 +116,12 @@ public class RunServer {
 				while (true) {
 					try {
 						WatchKey key = watcher.poll(2, TimeUnit.SECONDS);
-						List<WatchEvent<?>> events = key.pollEvents();
-						for (WatchEvent<?> event : events) {
-							System.out.println(event.kind());
-							System.out.println(event.context());
+						if (key != null) {
+							List<WatchEvent<?>> events = key.pollEvents();
+							for (WatchEvent<?> event : events) {
+								System.out.println(event.kind());
+								System.out.println(event.context());
+							}
 						}
 					} catch (InterruptedException e) {
 						e.printStackTrace();

@@ -66,7 +66,8 @@ public class GeoSyncServer extends AbstractHandler {
 
 	/**
 	 * A default port for the server. It is highly recommended to customize this
-	 * value with {@link GeoSyncServer#createServer(int, int, GeoSyncPayLoadProcessor)}
+	 * value with
+	 * {@link GeoSyncServer#createServer(int, int, GeoSyncPayLoadProcessor)}
 	 */
 	protected static final int DEFAULT_PORT = 5201;
 	/**
@@ -182,8 +183,7 @@ public class GeoSyncServer extends AbstractHandler {
 				processor.process(payLoad);
 			} catch (GeoSyncPayLoadProcessingException e) {
 				// send error
-				sendError(response, baseRequest,
-						HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+				sendError(response, baseRequest, e.getErrorCode(),
 						e.getMessage());
 				return;
 			}

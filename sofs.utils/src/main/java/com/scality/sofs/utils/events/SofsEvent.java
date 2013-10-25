@@ -33,6 +33,8 @@
  */
 package com.scality.sofs.utils.events;
 
+import org.apache.commons.io.FilenameUtils;
+
 /**
  * 
  * A bean representing an event of type GeoSync Sofs
@@ -67,8 +69,9 @@ public class SofsEvent {
 		this.timestamp = timestamp;
 		this.ringKey = ringKey;
 		this.operationType = operationType;
-		this.path = path;
-		this.path2 = path2;
+		// Normalization is an extensive algorithm, commons.io
+		this.path = FilenameUtils.normalizeNoEndSeparator(path);
+		this.path2 = FilenameUtils.normalizeNoEndSeparator(path2);
 	}
 
 	/** event_log_version */
@@ -165,36 +168,37 @@ public class SofsEvent {
 		clone.duplicate = true;
 		return clone;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (!(obj instanceof SofsEvent))
 			return false;
 		SofsEvent other = (SofsEvent) obj;
-		
+
 		if (this.eventLogVersion != other.eventLogVersion)
 			return false;
 		if (this.timestamp != other.timestamp)
 			return false;
-		if (other.ringKey==null && this.ringKey != null)
+		if (other.ringKey == null && this.ringKey != null)
 			return false;
 		if (!this.ringKey.equals(other.ringKey))
 			return false;
 		if (!this.ringKey.equals(other.ringKey))
 			return false;
-		if (this.operationType!=null && !this.operationType.equals(other.operationType))
+		if (this.operationType != null
+				&& !this.operationType.equals(other.operationType))
 			return false;
-		if (this.path==null && other.path != null)
+		if (this.path == null && other.path != null)
 			return false;
-		if (other.path==null && this.path != null)
+		if (other.path == null && this.path != null)
 			return false;
-		if (this.path!=null && !this.path.equals(other.path))
+		if (this.path != null && !this.path.equals(other.path))
 			return false;
-		if (this.path2==null && other.path2 != null)
+		if (this.path2 == null && other.path2 != null)
 			return false;
-		if (other.path2==null && this.path2 != null)
+		if (other.path2 == null && this.path2 != null)
 			return false;
-		if (this.path2!=null && !this.path2.equals(other.path2))
+		if (this.path2 != null && !this.path2.equals(other.path2))
 			return false;
 		if (this.duplicate != other.duplicate)
 			return false;

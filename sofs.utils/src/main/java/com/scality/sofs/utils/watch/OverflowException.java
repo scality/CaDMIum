@@ -33,44 +33,24 @@
  */
 package com.scality.sofs.utils.watch;
 
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Modifier;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchEvent.Kind;
-import java.util.Collection;
-import java.util.List;
-
 /**
+ * This exception is thrown only in case the SofsWatchEventModifier CLOSE_CONN
+ * is used
  * 
- * A {@link WatchKey} interface for Sofs.
+ * @see com.scality.sofs.utils.watch.SofsWatchEventModifier.CLOSE_CONN_ON_OVERFLOW
  * 
- * @author julien.muller@ezako.com for Scality
- * @since 1.7
+ * @author ziad.bizri@ezako.com
  * 
  */
-public interface SofsWatchKey extends WatchKey {
+public class OverflowException extends Exception {
+
+	private static final long serialVersionUID = -1679235187499281981L;
 
 	/**
-	 * Returns the state value of the WatchKey
+	 * Default constructor, when overflow has been reached
 	 */
-	public boolean isReady();
+	public OverflowException() {
+		super("Max size of an eventList has been reached");
+	}
 
-	/**
-	 * @return the eventkinds this watchkey is listening to
-	 */
-	public List<Kind<?>> getEventKinds();
-
-	/**
-	 * Add an event to this WatchKey
-	 * 
-	 * @param event
-	 */
-	public void addEvent(WatchEvent<?> event) throws OverflowException;
-
-	/**
-	 * Returns all Modifiers for this event
-	 * 
-	 * @return modifiers
-	 */
-	public Collection<Modifier> getModifiers();
 }
