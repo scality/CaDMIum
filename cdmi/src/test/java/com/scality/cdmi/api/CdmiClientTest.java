@@ -514,7 +514,7 @@ public class CdmiClientTest {
 	
 	@Test
 	public void testMoveFileToNonExisting() throws IOException {
-        String path = BASEDIR + "quux.txt";
+	    String path = BASEDIR + "quux.txt";
         Assert.assertTrue(client.touch(path));
         OutputStream out = client.write(path, 0L);
         String teststring = "thisisateststring";
@@ -535,16 +535,27 @@ public class CdmiClientTest {
 	}
 	
    @Test
-    public void testMoveDirToNonExisting() throws IOException {
-        String path = BASEDIR + "quux/";
-        Assert.assertTrue(client.makedir(path));
+   public void testMoveDirToNonExisting() throws IOException {
+       String path = BASEDIR + "quux/";
+       Assert.assertTrue(client.makedir(path));
 
-        String pathTo = BASEDIR + "foo/bar/";
-        Assert.assertFalse(client.exists(pathTo));
-        Assert.assertFalse(client.rename(path, pathTo));
-        Assert.assertFalse(client.exists(pathTo));
-        Assert.assertTrue(client.exists(path));
+       String pathTo = BASEDIR + "foo/bar/";
+       Assert.assertFalse(client.exists(pathTo));
+       Assert.assertFalse(client.rename(path, pathTo));
+       Assert.assertFalse(client.exists(pathTo));
+       Assert.assertTrue(client.exists(path));
     }
+   
+   @Test
+   public void testMoveToSelf() throws IOException {
+       String path = BASEDIR + "cat/";
+       Assert.assertTrue(client.makedir(path));
+       String foo = path + "foo";
+       Assert.assertTrue(client.touch(foo));
+       
+       // The actual move to self test.
+       Assert.assertTrue(client.rename(foo, foo));
+   }
 
 
 	/**

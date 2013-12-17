@@ -219,6 +219,10 @@ public class CdmiClientImpl implements CdmiClient {
             }
             response = connector.moveContainer(srcKey, dstKey);
         } else {
+            if (srcKey.equals(dstKey)) {
+                // Same, nothing to do.
+                return true;
+            }
             response = connector.moveObject(srcKey, dstKey);
         }
         EntityUtils.consumeQuietly(response.getEntity());
