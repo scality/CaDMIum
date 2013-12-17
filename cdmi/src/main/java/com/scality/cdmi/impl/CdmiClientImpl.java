@@ -217,6 +217,12 @@ public class CdmiClientImpl implements CdmiClient {
             if (!dstKey.endsWith("/")) {
                 dstKey += "/";
             }
+            if (dstKey.startsWith(srcKey)) {
+                // Trying to move a folder to a subfolder.
+                // Workaround a bug in some implementations of CDMI servers that
+                // might return 500 instead of 400.
+                return false;
+            }
             response = connector.moveContainer(srcKey, dstKey);
         } else {
             if (srcKey.equals(dstKey)) {

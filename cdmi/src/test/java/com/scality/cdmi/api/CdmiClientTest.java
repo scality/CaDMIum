@@ -556,6 +556,17 @@ public class CdmiClientTest {
        // The actual move to self test.
        Assert.assertTrue(client.rename(foo, foo));
    }
+   
+   @Test
+   public void testMoveToSubdir() throws IOException {
+       String parent = BASEDIR + "car/";
+       Assert.assertTrue(client.makedir(parent));
+       String child = parent + "child/";
+       String childchild = child + "child2/";
+       
+       Assert.assertFalse(client.rename(parent, child));
+       Assert.assertFalse(client.rename(parent, childchild));
+   }
 
 
 	/**
