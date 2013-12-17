@@ -219,6 +219,25 @@ public class CdmiClientTest {
 		Assert.assertTrue(filenames.isEmpty());
 		Assert.assertTrue(dirnames.isEmpty());
 	}
+	
+	/**
+     * @throws IOException
+     */
+    @Test
+    public void testListMultiLevelMetadata() throws IOException {
+        String path = BASEDIR + "quux/";
+        Assert.assertTrue(client.makedir(path));
+        String[] subdirs = {"foo", "bar", "baz"};
+        for (String subd: subdirs) {
+            Assert.assertTrue(client.makedir(path + subd));
+        }
+        Assert.assertTrue(client.touch(path + "foo/cat.txt"));
+        Assert.assertTrue(client.makedir(path + "bar/bat"));
+        FileMetadata[] meta = client.listMetadata(path);
+        Assert.assertEquals(3, meta.length);
+    }
+	
+	
 
 	@Test
 	public void testListEmptyFile() throws IOException {
@@ -492,6 +511,41 @@ public class CdmiClientTest {
 		FileMetadata meta = client.getMetadata(parentpath);
 		Assert.assertEquals(17, meta.getLength());
 	}
+	
+	@Test
+	public void testMoveFileToNonExisting() throws IOException {
+        String path = BASEDIR + "quux.txt";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisateststring";
+        out.write(teststring.getBytes());
+        out.close();
+
+        String pathTo = BASEDIR + "foo/bar/baz/move.txt";
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertFalse(client.rename(path, pathTo));
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertTrue(client.exists(path));
+        
+        pathTo = BASEDIR + "cat/";
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertFalse(client.rename(path, pathTo));
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertTrue(client.exists(path));
+	}
+	
+   @Test
+    public void testMoveDirToNonExisting() throws IOException {
+        String path = BASEDIR + "quux/";
+        Assert.assertTrue(client.makedir(path));
+
+        String pathTo = BASEDIR + "foo/bar/";
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertFalse(client.rename(path, pathTo));
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertTrue(client.exists(path));
+    }
+
 
 	/**
 	 * @throws IOException

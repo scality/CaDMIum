@@ -87,6 +87,34 @@ public class MockCdmiClient implements CdmiClient {
         return key;
     }
 
+    private String getParentContainerName(String key) {
+        if (key.isEmpty() || "/".equals(key)) {
+            return key;
+        }
+        if (!key.contains("/")) {
+            return "";
+        }
+        if (key.endsWith("/")) {
+            return getParentContainerName(key.substring(0, key.length() - 1));
+        } else {
+            return new String(key.substring(0, key.lastIndexOf("/")));
+        }
+    }
+
+    private String getBaseName(String key) {
+        if (key.isEmpty() || "/".equals(key)) {
+            return "";
+        }
+        if (!key.contains("/")) {
+            return key;
+        }
+        if (key.endsWith("/")) {
+            return getBaseName(key.substring(0, key.length() - 1));
+        } else {
+            return new String(key.substring(key.lastIndexOf("/") + 1));
+        }
+    }
+
     @Override
     public boolean put(String key, File file) throws IOException {
         if (remoteFiles.containsKey(key)) {
@@ -108,8 +136,8 @@ public class MockCdmiClient implements CdmiClient {
         FileInputStream is = new FileInputStream(remoteFiles.get(key));
         byte[] buff = new byte[1024];
         int read;
-        while( (read = is.read(buff)) > -1) {
-        	out.write(buff, 0, read);
+        while ((read = is.read(buff)) > -1) {
+            out.write(buff, 0, read);
         }
         is.close();
         out.close();
@@ -130,13 +158,15 @@ public class MockCdmiClient implements CdmiClient {
 
     @Override
     public boolean exists(String key) throws IOException {
-        return remoteDirs.contains(getContainerKey(key)) || remoteFiles.containsKey(key);
+        return remoteDirs.contains(getContainerKey(key))
+                || remoteFiles.containsKey(key);
     }
 
     @Override
     public CdmiInputStream open(String key) throws IOException {
         if (remoteFiles.containsKey(key)) {
-            return new MockCdmiInputStream(new FileInputStream(remoteFiles.get(key)), -1);
+            return new MockCdmiInputStream(new FileInputStream(
+                    remoteFiles.get(key)), -1);
         }
         throw new FileNotFoundException();
     }
@@ -147,8 +177,10 @@ public class MockCdmiClient implements CdmiClient {
     }
 
     @Override
-    public CdmiInputStream open(String key, long startPos, int maxRead) throws IOException {
-        CdmiInputStream is = new MockCdmiInputStream(new FileInputStream(remoteFiles.get(key)), maxRead);
+    public CdmiInputStream open(String key, long startPos, int maxRead)
+            throws IOException {
+        CdmiInputStream is = new MockCdmiInputStream(new FileInputStream(
+                remoteFiles.get(key)), maxRead);
         is.skip(startPos);
         return is;
     }
@@ -210,27 +242,50 @@ public class MockCdmiClient implements CdmiClient {
 
     @Override
     public boolean rename(String srcKey, String dstKey) throws IOException {
+        // Remove trailing slashes if any.
+        srcKey = getContainerKey(srcKey);
         if (remoteFiles.containsKey(srcKey)) {
-            remoteFiles.put(dstKey, remoteFiles.get(srcKey));
+            String destination = dstKey;
+            // Move to a directory.
+            if (dstKey.endsWith("/")) {
+                destination = dstKey + getBaseName(srcKey);
+            } else if (remoteDirs.contains(dstKey)) {
+                destination = dstKey + "/" + getBaseName(srcKey);
+            }
+            if (!remoteDirs.contains(getParentContainerName(destination))) {
+                return false;
+            }
+            remoteFiles.put(destination, remoteFiles.get(srcKey));
             remoteFiles.remove(srcKey);
             return true;
         } else if (remoteDirs.contains(srcKey)) {
-            remoteDirs.add(dstKey);
+            String destination = dstKey;
+            // Move to a directory.
+            if (dstKey.endsWith("/")) {
+                destination = dstKey + getBaseName(srcKey);
+            } else if (remoteDirs.contains(dstKey)) {
+                destination = dstKey + "/" + getBaseName(srcKey);
+            }
+            if (!remoteDirs.contains(getParentContainerName(destination))) {
+                return false;
+            }                
+            remoteDirs.add(destination);
             remoteDirs.remove(srcKey);
             ArrayList<String> filesForMove = new ArrayList<String>();
-            for (String filename: remoteFiles.keySet()) {
+            for (String filename : remoteFiles.keySet()) {
                 if (filename.startsWith(srcKey)) {
                     filesForMove.add(filename);
                 }
             }
-            for (String filename: filesForMove) {
-                String destfilename = filename.replace(srcKey, dstKey);
+            for (String filename : filesForMove) {
+                String destfilename = filename.replace(srcKey, destination);
                 remoteFiles.put(destfilename, remoteFiles.get(filename));
                 remoteFiles.remove(filename);
             }
             return true;
+        } else {
+            throw new FileNotFoundException(srcKey);
         }
-        return false;
     }
 
     @Override
@@ -271,11 +326,11 @@ public class MockCdmiClient implements CdmiClient {
     @Override
     public FileMetadata getMetadata(String key) throws IOException {
         if (remoteFiles.containsKey(key)) {
-            return new FileMetadataImpl(key, remoteFiles.get(key).length(), 100, 100,
-            		false, "Mock Cdmi File Metadata");
+            return new FileMetadataImpl(key, remoteFiles.get(key).length(),
+                    100, 100, false, "Mock Cdmi File Metadata");
         } else if (remoteDirs.contains(getContainerKey(key))) {
             return new FileMetadataImpl(getContainerName(key), -1, 100, 100,
-            		true, "Mock Cdmi Container Metadata");
+                    true, "Mock Cdmi Container Metadata");
         } else {
             throw new FileNotFoundException();
         }
@@ -285,25 +340,28 @@ public class MockCdmiClient implements CdmiClient {
     public FileMetadata[] listMetadata(String key) throws IOException {
         ArrayList<FileMetadata> result = new ArrayList<FileMetadata>();
         if (remoteFiles.containsKey(key)) {
-            result.add(new FileMetadataImpl(key, remoteFiles.get(key).length(), 100, 100,
-            		false, "Mock Cdmi File Metadata"));
+            result.add(new FileMetadataImpl(key, remoteFiles.get(key).length(),
+                    100, 100, false, "Mock Cdmi File Metadata"));
         } else {
             key = getContainerKey(key);
             if (remoteDirs.contains(key)) {
                 for (String filename : remoteFiles.keySet()) {
-                    if (filename.startsWith(key)) {
-                        result.add(new FileMetadataImpl(filename, remoteFiles.get(filename).length(),
-                                100, 100, false, "Mock Cdmi File Metadata"));
+                    if (key.equals(getParentContainerName(filename))) {
+                        result.add(new FileMetadataImpl(filename, remoteFiles
+                                .get(filename).length(), 100, 100, false,
+                                "Mock Cdmi File Metadata"));
                     }
                 }
                 for (String dirname : remoteDirs) {
-                    if (dirname.startsWith(key) && !dirname.equals(key)) {
-                        result.add(new FileMetadataImpl(getContainerName(dirname), -1, 100, 100,
-                        		true, "Mock Cdmi Container Metadata"));
+                    if (!dirname.equals(key) &&
+                            key.equals(getParentContainerName(dirname))) {
+                        result.add(new FileMetadataImpl(
+                                getContainerName(dirname), -1, 100, 100, true,
+                                "Mock Cdmi Container Metadata"));
                     }
                 }
             } else {
-            	throw new FileNotFoundException(key);
+                throw new FileNotFoundException(key);
             }
         }
         return result.toArray(new FileMetadata[0]);
