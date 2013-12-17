@@ -291,19 +291,15 @@ public class CdmiClientImpl implements CdmiClient {
 
     @Override
     public FileMetadata getMetadata(String key) throws IOException {
+        // Throws a FileNotFoundException if no such key.
         CdmiMetadata metadata = metadatareader.readMetadata(key);
-        if (metadata != null) {
-            return new FileMetadataImpl(metadata);
-        }
-        return null;
+        return new FileMetadataImpl(metadata);
     }
 
     @Override
     public FileMetadata[] listMetadata(String key) throws IOException {
+        // Throws a FileNotFoundException if no such key.
         CdmiMetadata basemeta = metadatareader.readMetadata(key);
-        if (basemeta == null) {
-            return new FileMetadata[0];
-        }
         if (!basemeta.isContainer()) {
             return new FileMetadata[] { new FileMetadataImpl(basemeta) };
         } else {

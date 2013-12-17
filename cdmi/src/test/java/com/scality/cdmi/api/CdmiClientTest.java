@@ -221,6 +221,38 @@ public class CdmiClientTest {
 	}
 
 	@Test
+	public void testListEmptyFile() throws IOException {
+		String path = BASEDIR + "quux";
+		Assert.assertFalse(client.exists(path));
+		boolean exceptionRaised = false;
+		try {
+			client.listMetadata(path);
+		} catch (FileNotFoundException e) {
+			exceptionRaised = true;
+		}
+		Assert.assertTrue("Operation should raise a FileNotFound exception",
+				exceptionRaised);
+	}
+	
+	@Test
+	public void testListEmptyDir() throws IOException {
+		String path = BASEDIR + "quux/";
+		Assert.assertFalse(client.exists(path));
+		boolean exceptionRaised = false;
+		try {
+			client.listMetadata(path);
+		} catch (FileNotFoundException e) {
+			exceptionRaised = true;
+		}
+		Assert.assertTrue("Operation should raise a FileNotFound exception",
+				exceptionRaised);
+		Assert.assertTrue(client.makedir(path));
+		FileMetadata[] meta = client.listMetadata(path);
+		Assert.assertEquals(0, meta.length);
+	}
+
+
+	@Test
 	public void testWriting() throws IOException {
 		// Write a first string.
 		String path = BASEDIR + "cat.txt";

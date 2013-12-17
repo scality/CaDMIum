@@ -302,6 +302,8 @@ public class MockCdmiClient implements CdmiClient {
                         		true, "Mock Cdmi Container Metadata"));
                     }
                 }
+            } else {
+            	throw new FileNotFoundException(key);
             }
         }
         return result.toArray(new FileMetadata[0]);

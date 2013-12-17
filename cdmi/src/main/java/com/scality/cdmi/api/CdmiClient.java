@@ -247,10 +247,10 @@ public interface CdmiClient {
      * @param key
      *            the name of the container or the data object in the CDMI
      *            repository.
-     * @return a {@link FileMetadata} object containing the metadata, or null if
-     *         the key does not exist.
+     * @return a {@link FileMetadata} object containing the metadata.
      * @throws IOException
-     *             if any error occurred during communication.
+     *             if any error occurred during communication, or if the key
+     *             does not exist.
      */
     FileMetadata getMetadata(String key) throws IOException;
 
@@ -266,7 +266,8 @@ public interface CdmiClient {
      *         data object. An empty array if there is no container or data
      *         object associated with this key.
      * @throws IOException
-     *             if any error occurred during communication.
+     *             if any error occurred during communication, or if the key
+     *             does not exist.
      */
     FileMetadata[] listMetadata(String key) throws IOException;
 
