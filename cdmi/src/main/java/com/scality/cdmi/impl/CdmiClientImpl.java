@@ -62,6 +62,7 @@ import com.scality.cdmi.connector.CdmiOutputStream;
 import com.scality.cdmi.connector.CdmiTypes;
 import com.scality.cdmi.impl.metadata.CdmiMetadata;
 import com.scality.cdmi.impl.metadata.CdmiMetadataReader;
+import com.scality.cdmi.impl.utils.KeyUtils;
 import com.scality.cdmi.impl.utils.ParsingUtils;
 
 /**
@@ -217,13 +218,21 @@ public class CdmiClientImpl implements CdmiClient {
             if (!dstKey.endsWith("/")) {
                 dstKey += "/";
             }
-            if (dstKey.startsWith(srcKey)) {
+            if (dstKey.equals(srcKey)) {
+                // Nothing to do.
+                return true;  
+            } else if (dstKey.startsWith(srcKey)) {
                 // Trying to move a folder to a subfolder.
                 // Workaround a bug in some implementations of CDMI servers that
                 // might return 500 instead of 400.
                 return false;
             }
-            response = connector.moveContainer(srcKey, dstKey);
+            if (exists(dstKey)) {
+                response = connector.moveContainer(srcKey,
+                        dstKey + KeyUtils.getBaseName(srcKey) + "/");
+            } else {
+                response = connector.moveContainer(srcKey, dstKey);
+            }
         } else {
             if (srcKey.equals(dstKey)) {
                 // Same, nothing to do.

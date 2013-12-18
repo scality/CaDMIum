@@ -555,6 +555,7 @@ public class CdmiClientTest {
        
        // The actual move to self test.
        Assert.assertTrue(client.rename(foo, foo));
+       Assert.assertTrue(client.rename(path, path));
    }
    
    @Test
@@ -588,6 +589,26 @@ public class CdmiClientTest {
 		Assert.assertTrue(client.exists(file1.replace("dir1", "dir2")));
 	}
 
+	/**
+	 * @throws IOException
+	 */
+	@Test
+	public void testMoveDirToOtherDir() throws IOException {
+	    String dir1 = BASEDIR + "dir1";
+	    Assert.assertTrue(client.makedir(dir1));
+	    Assert.assertTrue(client.touch(dir1 + "/foo"));
+	    Assert.assertTrue(client.touch(dir1 + "/bar"));
+	    String dir2 = BASEDIR + "dir2";
+	    Assert.assertTrue(client.makedir(dir2));
+	    
+	    
+	    Assert.assertTrue(client.rename(dir1, dir2));
+	    Assert.assertFalse(client.exists(dir1));
+	    Assert.assertFalse(client.exists(dir1 + "/foo"));
+	    Assert.assertTrue(client.exists(dir2 + "/dir1"));
+	    Assert.assertTrue(client.exists(dir2 + "/dir1/foo"));
+	}
+	
 	/**
 	 * @throws IOException
 	 */

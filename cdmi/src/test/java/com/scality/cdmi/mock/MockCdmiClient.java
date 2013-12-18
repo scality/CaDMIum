@@ -48,6 +48,7 @@ import com.scality.cdmi.api.FileMetadata;
 import com.scality.cdmi.connector.CdmiInputStream;
 import com.scality.cdmi.connector.CdmiOutputStream;
 import com.scality.cdmi.impl.FileMetadataImpl;
+import com.scality.cdmi.impl.utils.KeyUtils;
 
 /**
  * A mock CDMI client that can be used for testing. It uses the local filesystem
@@ -72,47 +73,19 @@ public class MockCdmiClient implements CdmiClient {
         remoteDirs = new TreeSet<String>();
         remoteDirs.add("/");
     }
-
+    
     private String getContainerKey(String key) {
         if (key.length() > 1 && key.endsWith("/")) {
-            return key.substring(0, key.length() - 1);
+            return new String(key.substring(0, key.length() - 1));
         }
         return key;
     }
-
+    
     private String getContainerName(String key) {
         if (!key.endsWith("/")) {
             return key + "/";
         }
         return key;
-    }
-
-    private String getParentContainerName(String key) {
-        if (key.isEmpty() || "/".equals(key)) {
-            return key;
-        }
-        if (!key.contains("/")) {
-            return "";
-        }
-        if (key.endsWith("/")) {
-            return getParentContainerName(key.substring(0, key.length() - 1));
-        } else {
-            return new String(key.substring(0, key.lastIndexOf("/")));
-        }
-    }
-
-    private String getBaseName(String key) {
-        if (key.isEmpty() || "/".equals(key)) {
-            return "";
-        }
-        if (!key.contains("/")) {
-            return key;
-        }
-        if (key.endsWith("/")) {
-            return getBaseName(key.substring(0, key.length() - 1));
-        } else {
-            return new String(key.substring(key.lastIndexOf("/") + 1));
-        }
     }
 
     @Override
@@ -248,11 +221,11 @@ public class MockCdmiClient implements CdmiClient {
             String destination = dstKey;
             // Move to a directory.
             if (dstKey.endsWith("/")) {
-                destination = dstKey + getBaseName(srcKey);
+                destination = dstKey + KeyUtils.getBaseName(srcKey);
             } else if (remoteDirs.contains(dstKey)) {
-                destination = dstKey + "/" + getBaseName(srcKey);
+                destination = dstKey + "/" + KeyUtils.getBaseName(srcKey);
             }
-            if (!remoteDirs.contains(getParentContainerName(destination))) {
+            if (!remoteDirs.contains(KeyUtils.getParentContainerName(destination))) {
                 return false;
             }
             remoteFiles.put(destination, remoteFiles.get(srcKey));
@@ -262,11 +235,11 @@ public class MockCdmiClient implements CdmiClient {
             String destination = dstKey;
             // Move to a directory.
             if (dstKey.endsWith("/")) {
-                destination = dstKey + getBaseName(srcKey);
+                destination = dstKey + KeyUtils.getBaseName(srcKey);
             } else if (remoteDirs.contains(dstKey)) {
-                destination = dstKey + "/" + getBaseName(srcKey);
+                destination = dstKey + "/" + KeyUtils.getBaseName(srcKey);
             }
-            if (!remoteDirs.contains(getParentContainerName(destination))) {
+            if (!remoteDirs.contains(KeyUtils.getParentContainerName(destination))) {
                 return false;
             }                
             remoteDirs.add(destination);
@@ -346,7 +319,7 @@ public class MockCdmiClient implements CdmiClient {
             key = getContainerKey(key);
             if (remoteDirs.contains(key)) {
                 for (String filename : remoteFiles.keySet()) {
-                    if (key.equals(getParentContainerName(filename))) {
+                    if (key.equals(KeyUtils.getParentContainerName(filename))) {
                         result.add(new FileMetadataImpl(filename, remoteFiles
                                 .get(filename).length(), 100, 100, false,
                                 "Mock Cdmi File Metadata"));
@@ -354,7 +327,7 @@ public class MockCdmiClient implements CdmiClient {
                 }
                 for (String dirname : remoteDirs) {
                     if (!dirname.equals(key) &&
-                            key.equals(getParentContainerName(dirname))) {
+                            key.equals(KeyUtils.getParentContainerName(dirname))) {
                         result.add(new FileMetadataImpl(
                                 getContainerName(dirname), -1, 100, 100, true,
                                 "Mock Cdmi Container Metadata"));
