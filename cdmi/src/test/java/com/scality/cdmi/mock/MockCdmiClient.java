@@ -214,7 +214,7 @@ public class MockCdmiClient implements CdmiClient {
     }
 
     @Override
-    public boolean rename(String srcKey, String dstKey) throws IOException {
+    public boolean move(String srcKey, String dstKey) throws IOException {
         // Remove trailing slashes if any.
         srcKey = getContainerKey(srcKey);
         if (remoteFiles.containsKey(srcKey)) {

@@ -208,7 +208,7 @@ public class CdmiClientImpl implements CdmiClient {
     }
 
     @Override
-    public boolean rename(String srcKey, String dstKey) throws IOException {
+    public boolean move(String srcKey, String dstKey) throws IOException {
         FileMetadata srcMeta = getMetadata(srcKey);
         FileMetadata dstMeta = null;
         try {

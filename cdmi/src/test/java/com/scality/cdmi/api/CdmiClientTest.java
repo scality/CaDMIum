@@ -478,7 +478,7 @@ public class CdmiClientTest {
 
 		String pathTo = BASEDIR + "move.txt";
 		Assert.assertFalse(client.exists(pathTo));
-		Assert.assertTrue(client.rename(path, pathTo));
+		Assert.assertTrue(client.move(path, pathTo));
 		Assert.assertTrue(client.exists(pathTo));
 		Assert.assertFalse(client.exists(path));
 
@@ -506,7 +506,7 @@ public class CdmiClientTest {
 		out.close();
 
 		String parentpath = BASEDIR + "bar/.baz/quux.txt";
-		Assert.assertTrue(client.rename(path, parentpath));
+		Assert.assertTrue(client.move(path, parentpath));
 		Assert.assertTrue(client.exists(parentpath));
 		FileMetadata meta = client.getMetadata(parentpath);
 		Assert.assertEquals(17, meta.getLength());
@@ -526,13 +526,13 @@ public class CdmiClientTest {
 
         String pathTo = BASEDIR + "foo/bar/baz/move.txt";
         Assert.assertFalse(client.exists(pathTo));
-        Assert.assertFalse(client.rename(path, pathTo));
+        Assert.assertFalse(client.move(path, pathTo));
         Assert.assertFalse(client.exists(pathTo));
         Assert.assertTrue(client.exists(path));
         
         pathTo = BASEDIR + "cat/";
         Assert.assertFalse(client.exists(pathTo));
-        Assert.assertFalse(client.rename(path, pathTo));
+        Assert.assertFalse(client.move(path, pathTo));
         Assert.assertFalse(client.exists(pathTo));
         Assert.assertTrue(client.exists(path));
 	}
@@ -547,7 +547,7 @@ public class CdmiClientTest {
 
        String pathTo = BASEDIR + "foo/bar/";
        Assert.assertFalse(client.exists(pathTo));
-       Assert.assertFalse(client.rename(path, pathTo));
+       Assert.assertFalse(client.move(path, pathTo));
        Assert.assertFalse(client.exists(pathTo));
        Assert.assertTrue(client.exists(path));
     }
@@ -563,8 +563,8 @@ public class CdmiClientTest {
        Assert.assertTrue(client.touch(foo));
        
        // The actual move to self test.
-       Assert.assertTrue(client.rename(foo, foo));
-       Assert.assertFalse(client.rename(path, path));
+       Assert.assertTrue(client.move(foo, foo));
+       Assert.assertFalse(client.move(path, path));
    }
    
    /**
@@ -577,8 +577,8 @@ public class CdmiClientTest {
        String child = parent + "child/";
        String childchild = child + "child2/";
        
-       Assert.assertFalse(client.rename(parent, child));
-       Assert.assertFalse(client.rename(parent, childchild));
+       Assert.assertFalse(client.move(parent, child));
+       Assert.assertFalse(client.move(parent, childchild));
    }
    
    /**
@@ -593,7 +593,7 @@ public class CdmiClientTest {
        Assert.assertTrue(client.makedirs(otherdir));
        Assert.assertTrue(client.touch(filename));
        
-       Assert.assertFalse(client.rename(dirname, filename));
+       Assert.assertFalse(client.move(dirname, filename));
    }
 
     /**
@@ -606,7 +606,7 @@ public class CdmiClientTest {
         String dirpath = BASEDIR + "bar/cat/car";
         Assert.assertTrue(client.makedirs(dirpath));
        
-        Assert.assertTrue(client.rename(filepath, dirpath));
+        Assert.assertTrue(client.move(filepath, dirpath));
         Assert.assertFalse(client.exists(filepath));
         Assert.assertTrue(client.exists(dirpath + "/cat.txt"));
     }
@@ -623,7 +623,7 @@ public class CdmiClientTest {
 		Assert.assertFalse(client.exists(path2));
 		Assert.assertTrue(client.makedir(path1));
 		Assert.assertTrue(client.touch(file1));
-		Assert.assertTrue(client.rename(path1, path2));
+		Assert.assertTrue(client.move(path1, path2));
 		Assert.assertFalse(client.exists(path1));
 		Assert.assertTrue(client.exists(path2));
 		Assert.assertFalse(client.exists(file1));
@@ -643,7 +643,7 @@ public class CdmiClientTest {
 	    Assert.assertTrue(client.makedir(dir2));
 	    
 	    
-	    Assert.assertTrue(client.rename(dir1, dir2));
+	    Assert.assertTrue(client.move(dir1, dir2));
 	    Assert.assertFalse(client.exists(dir1));
 	    Assert.assertFalse(client.exists(dir1 + "/foo"));
 	    Assert.assertTrue(client.exists(dir2 + "/dir1"));

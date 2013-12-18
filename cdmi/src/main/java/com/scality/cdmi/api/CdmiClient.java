@@ -204,17 +204,19 @@ public interface CdmiClient {
     boolean delete(String key, boolean recursive) throws IOException;
 
     /**
-     * Rename a data object or a container in the CDMI repository.
+     * Move a data object or a container in the CDMI repository.
      * 
      * @param srcKey
-     *            the name of the source data object in the repository.
+     *            the name of the source data object or container in the
+     *            repository.
      * @param dstKey
-     *            the name of the target data object in the repository.
-     * @return true if the rename was successful.
+     *            the name of the target data object or container in the
+     *            repository.
+     * @return true if the move was successful.
      * @throws IOException
      *             if any error occurred during the communication.
      */
-    boolean rename(String srcKey, String dstKey) throws IOException;
+    boolean move(String srcKey, String dstKey) throws IOException;
 
     /**
      * Create a new container in the CDMI repository.
