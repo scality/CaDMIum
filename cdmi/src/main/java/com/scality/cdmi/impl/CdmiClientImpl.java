@@ -209,25 +209,29 @@ public class CdmiClientImpl implements CdmiClient {
 
     @Override
     public boolean rename(String srcKey, String dstKey) throws IOException {
-        FileMetadata status = getMetadata(srcKey);
+        FileMetadata srcMeta = getMetadata(srcKey);
+        FileMetadata dstMeta = null;
+        try {
+            dstMeta = getMetadata(dstKey);
+        } catch (FileNotFoundException e) {
+            // Destination does not already exist.
+            dstMeta = null;
+        }
         HttpResponse response;
-        if (status.isContainer()) {
+        if (srcMeta.isContainer()) {
             if (!srcKey.endsWith("/")) {
                 srcKey += "/";
             }
             if (!dstKey.endsWith("/")) {
                 dstKey += "/";
             }
-            if (dstKey.equals(srcKey)) {
-                // Nothing to do.
-                return true;  
-            } else if (dstKey.startsWith(srcKey)) {
-                // Trying to move a folder to a subfolder.
+            if (dstKey.startsWith(srcKey) || (dstMeta != null && !dstMeta.isContainer())) {
+                // Trying to move a folder to a subfolder, or to a file.
                 // Workaround a bug in some implementations of CDMI servers that
-                // might return 500 instead of 400.
+                // might return 500 or 201 instead of 400.
                 return false;
             }
-            if (exists(dstKey)) {
+            if (dstMeta != null) {
                 response = connector.moveContainer(srcKey,
                         dstKey + KeyUtils.getBaseName(srcKey) + "/");
             } else {
@@ -238,7 +242,11 @@ public class CdmiClientImpl implements CdmiClient {
                 // Same, nothing to do.
                 return true;
             }
-            response = connector.moveObject(srcKey, dstKey);
+            String destination = dstKey;
+            if (dstMeta != null && dstMeta.isContainer()) {
+                destination = dstMeta.getKey() + "/" + KeyUtils.getBaseName(srcKey);
+            }
+            response = connector.moveObject(srcKey, destination);
         }
         EntityUtils.consumeQuietly(response.getEntity());
         StatusLine statusLine = response.getStatusLine();

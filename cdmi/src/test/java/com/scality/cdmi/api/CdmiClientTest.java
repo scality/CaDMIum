@@ -512,7 +512,10 @@ public class CdmiClientTest {
 		Assert.assertEquals(17, meta.getLength());
 	}
 	
-	@Test
+    /**
+     * @throws IOException
+     */
+    @Test
 	public void testMoveFileToNonExisting() throws IOException {
 	    String path = BASEDIR + "quux.txt";
         Assert.assertTrue(client.touch(path));
@@ -534,6 +537,9 @@ public class CdmiClientTest {
         Assert.assertTrue(client.exists(path));
 	}
 	
+    /**
+     * @throws IOException
+     */
    @Test
    public void testMoveDirToNonExisting() throws IOException {
        String path = BASEDIR + "quux/";
@@ -546,6 +552,9 @@ public class CdmiClientTest {
        Assert.assertTrue(client.exists(path));
     }
    
+   /**
+    * @throws IOException
+    */
    @Test
    public void testMoveToSelf() throws IOException {
        String path = BASEDIR + "cat/";
@@ -555,9 +564,12 @@ public class CdmiClientTest {
        
        // The actual move to self test.
        Assert.assertTrue(client.rename(foo, foo));
-       Assert.assertTrue(client.rename(path, path));
+       Assert.assertFalse(client.rename(path, path));
    }
    
+   /**
+    * @throws IOException
+    */
    @Test
    public void testMoveToSubdir() throws IOException {
        String parent = BASEDIR + "car/";
@@ -568,8 +580,37 @@ public class CdmiClientTest {
        Assert.assertFalse(client.rename(parent, child));
        Assert.assertFalse(client.rename(parent, childchild));
    }
+   
+   /**
+    * @throws IOException
+    */
+   @Test
+   public void testMoveDirToExistingFile() throws IOException {
+       String dirname = BASEDIR + "path/to/dir";
+       Assert.assertTrue(client.makedirs(dirname));
+       String otherdir = BASEDIR + "path/tooth/erdir/";
+       String filename = otherdir + "bar";
+       Assert.assertTrue(client.makedirs(otherdir));
+       Assert.assertTrue(client.touch(filename));
+       
+       Assert.assertFalse(client.rename(dirname, filename));
+   }
 
-
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveFileToDir() throws IOException {
+        String filepath = BASEDIR + "cat.txt";
+        Assert.assertTrue(client.touch(filepath));
+        String dirpath = BASEDIR + "bar/cat/car";
+        Assert.assertTrue(client.makedirs(dirpath));
+       
+        Assert.assertTrue(client.rename(filepath, dirpath));
+        Assert.assertFalse(client.exists(filepath));
+        Assert.assertTrue(client.exists(dirpath + "/cat.txt"));
+    }
+   
 	/**
 	 * @throws IOException
 	 */

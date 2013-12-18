@@ -232,6 +232,10 @@ public class MockCdmiClient implements CdmiClient {
             remoteFiles.remove(srcKey);
             return true;
         } else if (remoteDirs.contains(srcKey)) {
+            if (remoteFiles.containsKey(getContainerKey(dstKey)) ||
+                    srcKey.equals(getContainerKey(dstKey))) {
+                return false;
+            }
             String destination = dstKey;
             // Move to a directory.
             if (dstKey.endsWith("/")) {
