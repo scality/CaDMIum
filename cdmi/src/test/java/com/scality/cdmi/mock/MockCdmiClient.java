@@ -304,10 +304,10 @@ public class MockCdmiClient implements CdmiClient {
     public FileMetadata getMetadata(String key) throws IOException {
         if (remoteFiles.containsKey(key)) {
             return new FileMetadataImpl(key, remoteFiles.get(key).length(),
-                    100, 100, false, "Mock Cdmi File Metadata");
+                    100, 100, false, "{}");
         } else if (remoteDirs.contains(getContainerKey(key))) {
             return new FileMetadataImpl(getContainerName(key), -1, 100, 100,
-                    true, "Mock Cdmi Container Metadata");
+                    true, "{}");
         } else {
             throw new FileNotFoundException();
         }
@@ -318,7 +318,7 @@ public class MockCdmiClient implements CdmiClient {
         ArrayList<FileMetadata> result = new ArrayList<FileMetadata>();
         if (remoteFiles.containsKey(key)) {
             result.add(new FileMetadataImpl(key, remoteFiles.get(key).length(),
-                    100, 100, false, "Mock Cdmi File Metadata"));
+                    100, 100, false, "{}"));
         } else {
             key = getContainerKey(key);
             if (remoteDirs.contains(key)) {
@@ -326,7 +326,7 @@ public class MockCdmiClient implements CdmiClient {
                     if (key.equals(KeyUtils.getParentContainerName(filename))) {
                         result.add(new FileMetadataImpl(filename, remoteFiles
                                 .get(filename).length(), 100, 100, false,
-                                "Mock Cdmi File Metadata"));
+                                "{}"));
                     }
                 }
                 for (String dirname : remoteDirs) {
@@ -334,7 +334,7 @@ public class MockCdmiClient implements CdmiClient {
                             key.equals(KeyUtils.getParentContainerName(dirname))) {
                         result.add(new FileMetadataImpl(
                                 getContainerName(dirname), -1, 100, 100, true,
-                                "Mock Cdmi Container Metadata"));
+                                "{}"));
                     }
                 }
             } else {
