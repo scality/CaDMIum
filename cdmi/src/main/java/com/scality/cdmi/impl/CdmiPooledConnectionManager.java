@@ -87,6 +87,10 @@ public class CdmiPooledConnectionManager extends CdmiConnectionManager {
         HttpParams params = new BasicHttpParams();
         params.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT,
                 retryStrategy.getTimeOutMillis());
+        params.setParameter(CoreConnectionPNames.SO_REUSEADDR, true);
+        params.setParameter(CoreConnectionPNames.TCP_NODELAY, true);
+        params.setParameter(CoreConnectionPNames.SO_LINGER, 1);
+        // TODO: Add a data transfer timeout CoreConnectionPNames.SO_TIMEOUT
         params.setParameter(CoreConnectionPNames.SOCKET_BUFFER_SIZE, 524288);
         httpClient = new DefaultHttpClient(connectionManager, params);
         httpClient.getCredentialsProvider().setCredentials(authscope.getScope(),
