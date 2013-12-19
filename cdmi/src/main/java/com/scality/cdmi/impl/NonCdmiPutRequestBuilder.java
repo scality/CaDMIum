@@ -79,4 +79,10 @@ public class NonCdmiPutRequestBuilder implements PutRequestBuilder {
     public HttpPut build() throws CdmiConfigurationException {
         return put;
     }
+    
+    @Override
+    public PutRequestBuilder setHeader(String key, String value) {
+        put.setHeader(key, value);
+        return this;
+    }
 }

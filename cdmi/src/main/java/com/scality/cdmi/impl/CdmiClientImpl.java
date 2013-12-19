@@ -74,6 +74,7 @@ public class CdmiClientImpl implements CdmiClient {
     private CdmiMetadataReader metadatareader;
     private int ioBufferSize;
     private int maxPutSize;
+    private int maxPutThreads;
     private ParsingUtils parser;
 
     /**
@@ -87,12 +88,14 @@ public class CdmiClientImpl implements CdmiClient {
      */
     public CdmiClientImpl(HttpClient httpClient, RequestFactory factory,
             RetryStrategy retryStrategy, int ioBufferSize, int maxPutSize,
-            boolean multiThreaded) {
-        this.connector = new CdmiConnector(factory, httpClient, retryStrategy, multiThreaded);
+            boolean multiThreaded, int maxPutThreads) {
+        this.connector = new CdmiConnector(factory, httpClient, retryStrategy,
+                multiThreaded);
         this.metadatareader = new CdmiMetadataReader(connector);
         this.ioBufferSize = ioBufferSize;
         this.maxPutSize = maxPutSize;
         this.parser = new ParsingUtils();
+        this.maxPutThreads = maxPutThreads;
     }
 
     @Override
@@ -102,7 +105,8 @@ public class CdmiClientImpl implements CdmiClient {
         }
         FileInputStream is = new FileInputStream(file.getPath());
         BufferedInputStream buff = new BufferedInputStream(is);
-        CdmiOutputStream os = new CdmiOutputStream(key, 0L, connector, maxPutSize);
+        CdmiOutputStream os = new CdmiOutputStream(key, 0L, connector,
+                maxPutSize, maxPutThreads);
 
         int length;
         byte[] data = new byte[ioBufferSize];
@@ -141,7 +145,8 @@ public class CdmiClientImpl implements CdmiClient {
         }
         HttpResponse response = connector.createEmptyObjectNonCdmi(key);
         EntityUtils.consumeQuietly(response.getEntity());
-        return HttpStatus.SC_CREATED == response.getStatusLine().getStatusCode();
+        return HttpStatus.SC_CREATED == response.getStatusLine()
+                .getStatusCode();
     }
 
     @Override
@@ -153,7 +158,8 @@ public class CdmiClientImpl implements CdmiClient {
         }
         // Now parse the result.
         String objectType = parser.extractField(result, "objectType");
-        if (CdmiTypes.CDMI_CONTAINER.equals(objectType) || CdmiTypes.CDMI_OBJECT.equals(objectType)) {
+        if (CdmiTypes.CDMI_CONTAINER.equals(objectType)
+                || CdmiTypes.CDMI_OBJECT.equals(objectType)) {
             return true;
         }
         // Hide non containers / objects.
@@ -169,21 +175,24 @@ public class CdmiClientImpl implements CdmiClient {
     public CdmiInputStream open(String key, long startPos) throws IOException {
         return new CdmiInputStream(key, connector, startPos, -1);
     }
-    
+
     @Override
-    public CdmiInputStream open(String key, long startPos, int maxRead) throws IOException {
+    public CdmiInputStream open(String key, long startPos, int maxRead)
+            throws IOException {
         return new CdmiInputStream(key, connector, startPos, maxRead);
     }
 
     @Override
     public CdmiOutputStream write(String key, long startPos) throws IOException {
-        return new CdmiOutputStream(key, startPos, connector, maxPutSize);
+        return new CdmiOutputStream(key, startPos, connector, maxPutSize,
+                maxPutThreads);
     }
 
     @Override
     public CdmiOutputStream append(String key) throws IOException {
         CdmiMetadata metadata = metadatareader.readMetadata(key);
-        return new CdmiOutputStream(key, metadata.getSize(), connector, maxPutSize);
+        return new CdmiOutputStream(key, metadata.getSize(), connector,
+                maxPutSize, maxPutThreads);
     }
 
     @Override
@@ -225,7 +234,8 @@ public class CdmiClientImpl implements CdmiClient {
             if (!dstKey.endsWith("/")) {
                 dstKey += "/";
             }
-            if (dstKey.startsWith(srcKey) || (dstMeta != null && !dstMeta.isContainer())) {
+            if (dstKey.startsWith(srcKey)
+                    || (dstMeta != null && !dstMeta.isContainer())) {
                 // Trying to move a folder to a subfolder, or to a file.
                 // Workaround a bug in some implementations of CDMI servers that
                 // might return 500 or 201 instead of 400.
@@ -244,7 +254,8 @@ public class CdmiClientImpl implements CdmiClient {
             }
             String destination = dstKey;
             if (dstMeta != null && dstMeta.isContainer()) {
-                destination = dstMeta.getKey() + "/" + KeyUtils.getBaseName(srcKey);
+                destination = dstMeta.getKey() + "/"
+                        + KeyUtils.getBaseName(srcKey);
             }
             response = connector.moveObject(srcKey, destination);
         }
@@ -312,8 +323,8 @@ public class CdmiClientImpl implements CdmiClient {
 
     private Iterable<String> getChildren(String key) throws IOException {
         HttpResponse response = connector.listContainer(key);
-        return Arrays.asList(parser.extractArray(EntityUtils.toString(response.getEntity()),
-                "children"));
+        return Arrays.asList(parser.extractArray(
+                EntityUtils.toString(response.getEntity()), "children"));
     }
 
     @Override
@@ -360,5 +371,42 @@ public class CdmiClientImpl implements CdmiClient {
             return EntityUtils.toString(entity);
         }
         return null;
+    }
+
+    @Override
+    public boolean setMetadata(String key, String metakey, String metavalue)
+            throws IOException {
+        HttpResponse response = connector.getObjectType(key);
+        String result = EntityUtils.toString(response.getEntity());
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            throw new FileNotFoundException(key);
+        }
+        // Now parse the result.
+        String objectType = parser.extractField(result, "objectType");
+        if (CdmiTypes.CDMI_CONTAINER.equals(objectType)) {
+            response = connector.setContainerMetadata(key, metakey, metavalue);
+        } else if (CdmiTypes.CDMI_OBJECT.equals(objectType)) {
+            response = connector.setObjectMetadata(key, metakey, metavalue);
+        } else {
+            throw new CdmiConnectionException(
+                    "Cannot set metadata for object type " + objectType);
+        }
+        EntityUtils.consumeQuietly(response.getEntity());
+        StatusLine statusLine = response.getStatusLine();
+        return statusLine.getStatusCode() == HttpStatus.SC_NO_CONTENT;
+    }
+
+    @Override
+    public String getMetadataValue(String key, String metakey)
+            throws IOException {
+        if (!exists(key)) {
+            throw new FileNotFoundException(key);
+        }
+        HttpResponse response = connector.getMetadataValue(key, metakey);
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            EntityUtils.consumeQuietly(response.getEntity());
+            return null;  // No such metadata key.
+        }
+        return metadatareader.readMetadataValue(response, metakey);
     }
 }

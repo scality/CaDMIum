@@ -75,7 +75,7 @@ public class CdmiPooledConnectionManager extends CdmiConnectionManager {
      */
     public CdmiPooledConnectionManager(RequestFactory factory, CdmiAuthScope authscope,
             CdmiCredentials credentials, RetryStrategy retryStrategy, int max_total_connection,
-            int ioBufferSize, int maxPutSize) {
+            int ioBufferSize, int maxPutSize, int maxPutThreads) {
         schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
         schemeRegistry.register(new Scheme("https", 443, SSLSocketFactory.getSocketFactory()));
@@ -96,7 +96,7 @@ public class CdmiPooledConnectionManager extends CdmiConnectionManager {
         httpClient.getCredentialsProvider().setCredentials(authscope.getScope(),
                 credentials.getCred());
         client = new CdmiClientImpl(httpClient, factory, retryStrategy, ioBufferSize,
-                maxPutSize, true /*multiThreaded*/);
+                maxPutSize, true /*multiThreaded*/, maxPutThreads);
     }
 
     @Override

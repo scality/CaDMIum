@@ -33,7 +33,11 @@
  */
 package com.scality.cdmi.connector;
 
+import java.io.FileNotFoundException;
 import java.io.OutputStream;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -41,6 +45,8 @@ import org.apache.http.util.ByteArrayBuffer;
 import org.apache.http.util.EntityUtils;
 
 import com.scality.cdmi.api.CdmiConnectionException;
+import com.scality.cdmi.impl.metadata.CdmiMetadata;
+import com.scality.cdmi.impl.metadata.CdmiMetadataReader;
 
 /**
  * An {@link OutputStream} implementation for writing CDMI data objects. It
@@ -63,7 +69,8 @@ public class CdmiOutputStream extends OutputStream {
 	private int pos_in_buffer;
 	private long pos_in_target;
 	private boolean closed;
-	private PutThread putThread;
+	private ThreadPoolExecutor executor;
+	private CdmiMetadataReader metareader;
 
 	private static void writeOut(CdmiConnector connector, String path,
 			long offset, byte[] data) throws CdmiConnectionException {
@@ -101,7 +108,7 @@ public class CdmiOutputStream extends OutputStream {
 	}
 
 	public CdmiOutputStream(String path, long offset, CdmiConnector connector,
-			int maxPutSize) throws CdmiConnectionException {
+			int maxPutSize, int maxPutThreads) throws CdmiConnectionException {
 		this.connector = connector;
 		this.maxPutSize = maxPutSize;
 		this.path = path;
@@ -110,7 +117,16 @@ public class CdmiOutputStream extends OutputStream {
 		this.pos_in_target = offset;
 		this.closed = false;
 		this.buffer = new ByteArrayBuffer(maxPutSize);
-		this.putThread = null;
+		if (connector.isMultiThreaded()) {
+			// FIXME: remove hardcoded value.
+			executor = new ThreadPoolExecutor(maxPutThreads, maxPutThreads, 0L,
+					TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(
+							maxPutThreads),
+					new ThreadPoolExecutor.CallerRunsPolicy());
+		} else {
+			executor = null;
+		}
+		metareader = new CdmiMetadataReader(this.connector);
 	}
 
 	/**
@@ -183,6 +199,24 @@ public class CdmiOutputStream extends OutputStream {
 			throw new CdmiConnectionException("Output stream is already closed");
 		}
 		writeout();
+
+		if (executor != null) {
+			executor.shutdown();
+			while (!executor.isTerminated()) {
+			}
+			executor = new ThreadPoolExecutor(20, 20, 0L,
+					TimeUnit.MILLISECONDS,
+					new ArrayBlockingQueue<Runnable>(20),
+					new ThreadPoolExecutor.CallerRunsPolicy());
+		}
+
+		try {
+			CdmiMetadata meta = metareader.readMetadata(path);
+			connector.forceFlush(path, meta.getSize());
+		} catch (FileNotFoundException e) {
+			// Hard to believe that it can happen.
+			throw new CdmiConnectionException(e);
+		}
 	}
 
 	/**
@@ -194,39 +228,20 @@ public class CdmiOutputStream extends OutputStream {
 		if (!closed) {
 			flush();
 		}
-		if (putThread != null) {
-			try {
-				putThread.join();
-			} catch (InterruptedException e) {
-				throw new CdmiConnectionException(e);
-			}
-			putThread = null;
-		}
 		closed = true;
 	}
 
 	private void writeout() throws CdmiConnectionException {
 		int length = buffer.length();
-		if (putThread != null) {
-			try {
-				putThread.join();
-			} catch (InterruptedException e) {
-				throw new CdmiConnectionException(e);
-			}
-			putThread = null;
-		}
 		if (length > 0) {
 			if (connector.isMultiThreaded()) {
-				putThread = new PutThread(connector, pos_in_target,
-						buffer.toByteArray());
-				putThread.start();
+				executor.execute(new PutThread(connector, pos_in_target, buffer
+						.toByteArray()));
 			} else {
 				writeOut(connector, path, pos_in_target, buffer.toByteArray());
 			}
-
 			pos_in_target += length;
 			reinit();
-
 		}
 	}
 }

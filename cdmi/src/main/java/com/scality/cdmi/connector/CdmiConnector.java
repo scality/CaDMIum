@@ -219,6 +219,20 @@ public class CdmiConnector {
         }
     }
 
+    public HttpResponse setContainerMetadata(String path, String key,
+            String value) throws CdmiConnectionException {
+        try {
+            HttpPut put = requestFactory
+                    .newPut(CdmiTypes.CDMI_CONTAINER, path, "metadata:" + key)
+                    .addBody("metadata",
+                            String.format("{\"%s\":\"%s\"}", key, value))
+                    .build();
+            return stubbornExecute(put);
+        } catch (CdmiConfigurationException e) {
+            throw new CdmiConnectionException(e);
+        }
+    }
+
     /**
      * @param path
      * @return
@@ -440,6 +454,48 @@ public class CdmiConnector {
     public HttpResponse userSpecificQuery(String key, String query) throws CdmiConnectionException {
         try {
             HttpGet get = requestFactory.newGet(key, query);
+            return stubbornExecute(get);
+        } catch (CdmiConfigurationException e) {
+            throw new CdmiConnectionException(e);
+        }
+    }
+
+    /**
+     * Scality specific operation for flushing out a data object.
+     * 
+     * @param request
+     */
+    public HttpResponse forceFlush(String dataObjectPath, long size)
+            throws CdmiConnectionException {
+        try {
+            HttpPut put = nonCdmiRequestFactory
+                    .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
+                    .setHeader("X-Scal-Truncate", String.valueOf(size)).build();
+            return stubbornExecute(put);
+        } catch (CdmiConfigurationException e) {
+            throw new CdmiConnectionException(e);
+        }
+    }
+
+    public HttpResponse setObjectMetadata(String path, String key, String value)
+            throws CdmiConnectionException {
+        try {
+            HttpPut put = requestFactory
+                    .newPut(CdmiTypes.CDMI_OBJECT, path, "metadata:" + key)
+                    .addBody("metadata",
+                            String.format("{\"%s\":\"%s\"}", key, value))
+                    .build();
+            return stubbornExecute(put);
+        } catch (CdmiConfigurationException e) {
+            throw new CdmiConnectionException(e);
+        }
+    }
+
+    public HttpResponse getMetadataValue(String path, String key)
+            throws CdmiConnectionException {
+        try {
+            HttpGet get = requestFactory.newGet(path,
+                    String.format("metadata:%s", key));
             return stubbornExecute(get);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);

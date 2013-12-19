@@ -793,4 +793,43 @@ public class CdmiClientTest {
 		Assert.assertTrue(client.exists(path));
 		Assert.assertTrue(client.delete(path, false));
 	}
+	
+	/**
+	 * Make sure we can update metadata.
+	 * @throws IOException
+	 */
+	@Test
+	public void testSetMetadataValue() throws IOException {
+	    String path = BASEDIR + "testmeta";
+	    Assert.assertTrue(client.touch(path));
+	    Assert.assertTrue(client.setMetadata(path, "foo", "bar"));
+	    Assert.assertEquals("bar", client.getMetadataValue(path, "foo"));
+	    Assert.assertTrue(client.setMetadata(path, "foo", "cat"));
+        Assert.assertEquals("cat", client.getMetadataValue(path, "foo"));
+        
+        // Test some failure scenarios.
+        
+        // Setting metadata on a file that does not exist.
+        boolean failed = false;
+        try {
+            client.setMetadata(path + "donotexist", "foo", "bar");
+        } catch (FileNotFoundException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        
+        // Getting metadata on a file that does not exist.
+        failed = false;
+        try {
+            client.getMetadataValue(path + "donotexists", "foo");
+        } catch (FileNotFoundException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        
+        // Getting metadata on a file that does exist, but the metadata key
+        // is not present.
+        Assert.assertNull(client.getMetadataValue(path, "notexist"));
+	}
+	
 }

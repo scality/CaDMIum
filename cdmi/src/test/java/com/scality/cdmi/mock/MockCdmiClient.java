@@ -67,11 +67,16 @@ public class MockCdmiClient implements CdmiClient {
      * filesystem.
      */
     private TreeSet<String> remoteDirs;
+    /**
+     * A map to store metadata associated.
+     */
+    private TreeMap<String, TreeMap<String, String>> metaServer;
 
     public MockCdmiClient() {
         remoteFiles = new TreeMap<String, File>();
         remoteDirs = new TreeSet<String>();
         remoteDirs.add("/");
+        metaServer = new TreeMap<String, TreeMap<String, String>>();
     }
     
     private String getContainerKey(String key) {
@@ -347,6 +352,33 @@ public class MockCdmiClient implements CdmiClient {
     @Override
     public String userExtension(String key, String query) throws IOException {
         // No support for extensions.
+        return null;
+    }
+
+    @Override
+    public boolean setMetadata(String key, String metakey, String metavalue)
+            throws IOException {
+        if (!remoteDirs.contains(getContainerKey(key)) &&
+                !remoteFiles.containsKey(key)) {
+            throw new FileNotFoundException(key);
+        }
+        if (!metaServer.containsKey(key)) {
+            metaServer.put(key, new TreeMap<String, String>());
+        }
+        metaServer.get(key).put(metakey, metavalue);
+        return true;
+    }
+
+    @Override
+    public String getMetadataValue(String key, String metakey)
+            throws IOException {
+        if (!remoteDirs.contains(getContainerKey(key)) &&
+                !remoteFiles.containsKey(key)) {
+            throw new FileNotFoundException(key);
+        }
+        if (metaServer.containsKey(key) && metaServer.get(key).containsKey(metakey)) {
+            return metaServer.get(key).get(metakey);
+        }
         return null;
     }
 }

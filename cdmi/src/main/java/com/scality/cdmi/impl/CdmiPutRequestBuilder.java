@@ -93,9 +93,11 @@ public class CdmiPutRequestBuilder implements PutRequestBuilder {
         for (Map.Entry<String, String> item : entries.entrySet()) {
             if (item.getValue().startsWith("{")) {
                 // Embedded JSON object.
-                buffer.append(String.format(" \"%s\": %s,", item.getKey(), item.getValue()));
+                buffer.append(String.format(" \"%s\": %s,", item.getKey(),
+                        item.getValue()));
             } else {
-                buffer.append(String.format(" \"%s\": \"%s\",", item.getKey(), item.getValue()));
+                buffer.append(String.format(" \"%s\": \"%s\",", item.getKey(),
+                        item.getValue()));
             }
             hasValue = true;
         }
@@ -117,5 +119,11 @@ public class CdmiPutRequestBuilder implements PutRequestBuilder {
             throw new CdmiConfigurationException(e);
         }
         return put;
+    }
+
+    @Override
+    public PutRequestBuilder setHeader(String key, String value) {
+        put.setHeader(key, value);
+        return this;
     }
 }

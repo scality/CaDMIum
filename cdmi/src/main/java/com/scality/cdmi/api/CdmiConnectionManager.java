@@ -141,9 +141,9 @@ public abstract class CdmiConnectionManager {
      */
     public static CdmiPooledConnectionManager newPooledConnectionManager(RequestFactory factory,
             CdmiAuthScope authscope, CdmiCredentials credentials, RetryStrategy retryStrategy,
-            int max_total_connection, int ioBufferSize, int maxPutSize) {
+            int max_total_connection, int ioBufferSize, int maxPutSize, int maxPutThreads) {
         return new CdmiPooledConnectionManager(factory, authscope, credentials, retryStrategy,
-                max_total_connection, ioBufferSize, maxPutSize);
+                max_total_connection, ioBufferSize, maxPutSize, maxPutThreads);
     }
 
     /**
@@ -164,6 +164,6 @@ public abstract class CdmiConnectionManager {
     public static CdmiPooledConnectionManager newPooledConnectionManager(RequestFactory factory,
             CdmiAuthScope authscope, CdmiCredentials credentials) {
         return new CdmiPooledConnectionManager(factory, authscope, credentials,
-                new RetryStrategy(), 20, 8192, 16777216);
+                new RetryStrategy(), 20, 8192, 16777216, 5);
     }
 }

@@ -85,6 +85,16 @@ public interface PutRequestBuilder {
     public PutRequestBuilder addBody(String key, String value);
 
     /**
+     * Set a key / value pair to the headers of the request.
+     * 
+     * @param key
+     * @param value
+     * @return the builder
+     */
+    public PutRequestBuilder setHeader(String key, String value);
+
+    
+    /**
      * Store all the modifications in the PUT request.
      * 
      * @return a {@link HttpPut} request

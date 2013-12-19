@@ -257,6 +257,22 @@ public interface CdmiClient {
     FileMetadata getMetadata(String key) throws IOException;
 
     /**
+     * Read a specific metadata value associated with a data object or a container.
+     * 
+     * @param key
+     *            the name of the container or the data object in the CDMI
+     *            repository.
+     * @param metakey
+     *            the name of the metadata key to be read.
+     * @return a String object containing the value or null if the metadata key
+     *         does not exist.
+     * @throws IOException
+     *             if any error occurred during communication, or if the key
+     *             does not exist.
+     */
+    String getMetadataValue(String key, String metakey) throws IOException;
+
+    /**
      * Read the metadata associated with all the children of a container in the
      * CDMI repository. This method can also be used with data objects.
      * 
@@ -272,6 +288,24 @@ public interface CdmiClient {
      *             does not exist.
      */
     FileMetadata[] listMetadata(String key) throws IOException;
+
+    /**
+     * Set or update a metadata key associated with a data object or a
+     * container.
+     * 
+     * @param key
+     *            the name of the container or the data object in the CDMI.
+     * @param metakey
+     *            the name of the metadata key to be set or updated.
+     * @param metavalue
+     *            the value to be set for the metadata key.
+     * @return true if the operation was successful, false otherwise.
+     * @throws IOException
+     *             if any error occurred during communication, or if the key
+     *             does not exist.
+     */
+    boolean setMetadata(String key, String metakey, String metavalue)
+            throws IOException;
 
     /**
      * Allow a user to run specific query for a key stored in the CDMI

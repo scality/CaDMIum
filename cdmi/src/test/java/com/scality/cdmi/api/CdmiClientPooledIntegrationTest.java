@@ -62,18 +62,22 @@ public class CdmiClientPooledIntegrationTest extends CdmiClientTest {
         prop.load(Thread.currentThread().getContextClassLoader()
                 .getResource("integrationtest.properties").openStream());
         cm = CdmiConnectionManager.newPooledConnectionManager(
-                RequestFactory.newCdmiFactory(URI.create(prop.getProperty("cdmi.server")),
+                RequestFactory.newCdmiFactory(
+                        URI.create(prop.getProperty("cdmi.server")),
                         prop.getProperty("cdmi.version")),
-                new CdmiAuthScope(prop.getProperty("cdmi.authscope.host"), Integer.parseInt(prop
-                        .getProperty("cdmi.authscope.port"))),
-                new CdmiCredentials(prop.getProperty("cdmi.credentials.user"), prop
-                        .getProperty("cdmi.credentials.password")),
-                new RetryStrategy(Integer.parseInt(prop.getProperty("cdmi.retry.max")), Integer
-                        .parseInt(prop.getProperty("cdmi.retry.sleep")), Integer.parseInt(prop
-                        .getProperty("cdmi.retry.timeout"))), Integer.parseInt(prop
-                        .getProperty("cdmi.pool.threads")), Integer.parseInt(prop
-                        .getProperty("cdmi.blocksize")), Integer.parseInt(prop
-                        .getProperty("cdmi.putsize")));
+                new CdmiAuthScope(prop.getProperty("cdmi.authscope.host"),
+                        Integer.parseInt(prop
+                                .getProperty("cdmi.authscope.port"))),
+                new CdmiCredentials(prop.getProperty("cdmi.credentials.user"),
+                        prop.getProperty("cdmi.credentials.password")),
+                new RetryStrategy(Integer.parseInt(prop
+                        .getProperty("cdmi.retry.max")), Integer.parseInt(prop
+                        .getProperty("cdmi.retry.sleep")), Integer
+                        .parseInt(prop.getProperty("cdmi.retry.timeout"))),
+                Integer.parseInt(prop.getProperty("cdmi.pool.threads")),
+                Integer.parseInt(prop.getProperty("cdmi.blocksize")), Integer
+                        .parseInt(prop.getProperty("cdmi.putsize")), Integer
+                        .parseInt(prop.getProperty("cdmi.putthreads")));
         super.setUp();
     }
 

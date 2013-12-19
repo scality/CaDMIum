@@ -88,7 +88,7 @@ public class CdmiBasicConnectionManager extends CdmiConnectionManager {
 		httpClient.getCredentialsProvider().setCredentials(
 				authscope.getScope(), credentials.getCred());
 		client = new CdmiClientImpl(httpClient, factory, retryStrategy,
-				ioBufferSize, maxPutSize, false /* multiThreaded */);
+				ioBufferSize, maxPutSize, false /* multiThreaded */, 1);
 	}
 
 	@Override

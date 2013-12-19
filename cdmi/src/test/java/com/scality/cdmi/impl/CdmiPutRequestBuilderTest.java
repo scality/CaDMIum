@@ -132,4 +132,17 @@ public class CdmiPutRequestBuilderTest {
         Assert.assertEquals("IiMk", root.get("value").getTextValue());
         Assert.assertEquals("baz", root.get("bar").getTextValue());
     }
+    
+    /**
+     * Test that we can parse the headers after they were set.
+     * 
+     * @throws CdmiConfigurationException
+     */
+    @Test
+    public void testSetHeader() throws CdmiConfigurationException {
+        CdmiPutRequestBuilder builder = newBuilder();
+        HttpPut put = builder.setHeader("foo", "bar").setHeader("cat", "car").addContents(new byte[] { 34, 35, 36}).build();
+        Assert.assertEquals("bar", put.getLastHeader("foo").getValue());
+        Assert.assertEquals("car", put.getLastHeader("cat").getValue());
+    }
 }

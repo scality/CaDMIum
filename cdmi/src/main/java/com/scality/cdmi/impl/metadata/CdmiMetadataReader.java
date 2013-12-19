@@ -40,6 +40,11 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.ParseException;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import com.scality.cdmi.api.CdmiConnectionException;
 import com.scality.cdmi.connector.CdmiConnector;
@@ -56,16 +61,19 @@ import com.scality.cdmi.impl.utils.ParsingUtils;
  */
 public class CdmiMetadataReader {
     private static final String[] OBJECT_TYPE = { "objectType" };
-    private static final String[] CONTAINER_FIELD_NAMES = { "metadata", "objectName", "objectType",
-            "objectID", "parentURI", "capabilitiesURI" };
-    private static final String[] DATA_OBJECT_FIELD_NAMES = { "metadata", "valuetransferencoding",
-            "objectName", "objectType", "objectID", "parentURI", "capabilitiesURI" };
+    private static final String[] CONTAINER_FIELD_NAMES = { "metadata",
+            "objectName", "objectType", "objectID", "parentURI",
+            "capabilitiesURI" };
+    private static final String[] DATA_OBJECT_FIELD_NAMES = { "metadata",
+            "valuetransferencoding", "objectName", "objectType", "objectID",
+            "parentURI", "capabilitiesURI" };
 
     private CdmiConnector conn;
     private ParsingUtils parser;
 
     /**
      * Constructor
+     * 
      * @param conn
      */
     public CdmiMetadataReader(CdmiConnector conn) {
@@ -79,8 +87,8 @@ public class CdmiMetadataReader {
      * @throws CdmiConnectionException
      * @throws FileNotFoundException
      */
-    public CdmiMetadata readMetadata(String path) throws CdmiConnectionException,
-            FileNotFoundException {
+    public CdmiMetadata readMetadata(String path)
+            throws CdmiConnectionException, FileNotFoundException {
         // First get the object type.
         HttpResponse response = conn.readMetadata(path, OBJECT_TYPE);
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
@@ -89,26 +97,53 @@ public class CdmiMetadataReader {
         }
         String objectType = readObjectType(response);
         if (CdmiTypes.CDMI_CONTAINER.equals(objectType)) {
-            return extractMetadata(conn.readMetadata(path, CONTAINER_FIELD_NAMES));
+            return extractMetadata(conn.readMetadata(path,
+                    CONTAINER_FIELD_NAMES));
         } else if (CdmiTypes.CDMI_OBJECT.equals(objectType)) {
-            return extractMetadata(conn.readMetadata(path, DATA_OBJECT_FIELD_NAMES));
+            return extractMetadata(conn.readMetadata(path,
+                    DATA_OBJECT_FIELD_NAMES));
         } else {
             // FIXME: Allow reading other types.
-        	throw new UnsupportedOperationException("Only containers and data objects are "
-        			+ "supported for reading metadata information; got " + objectType);
+            throw new UnsupportedOperationException(
+                    "Only containers and data objects are "
+                            + "supported for reading metadata information; got "
+                            + objectType);
         }
     }
 
-    private String readObjectType(HttpResponse response) throws CdmiConnectionException {
+    public String readMetadataValue(HttpResponse response, String key)
+            throws CdmiConnectionException {
         try {
-            return parser.extractField(EntityUtils.toString(response.getEntity()), "objectType");
+            String jsonEncoded = EntityUtils.toString(response.getEntity());
+            JsonParser parser = new JsonFactory().createJsonParser(jsonEncoded);
+            ObjectMapper m = new ObjectMapper();
+            JsonNode root = m.readTree(parser);
+            if (root.get("metadata") == null
+                    || root.get("metadata").get(key) == null) {
+                return null;
+            } else {
+                return root.get("metadata").get(key).getValueAsText();
+            }
+        } catch (JsonParseException e) {
+            throw new CdmiConnectionException(e);
+        } catch (IOException e) {
+            throw new CdmiConnectionException(e);
+        }
+    }
+
+    private String readObjectType(HttpResponse response)
+            throws CdmiConnectionException {
+        try {
+            return parser.extractField(
+                    EntityUtils.toString(response.getEntity()), "objectType");
         } catch (IOException e) {
             throw new CdmiConnectionException(e);
         }
 
     }
 
-    private CdmiMetadata extractMetadata(HttpResponse response) throws CdmiConnectionException {
+    private CdmiMetadata extractMetadata(HttpResponse response)
+            throws CdmiConnectionException {
         try {
             String jsonEncoded = EntityUtils.toString(response.getEntity());
             return new CdmiMetadata(jsonEncoded);
