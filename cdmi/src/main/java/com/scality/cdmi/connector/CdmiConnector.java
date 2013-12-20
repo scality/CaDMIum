@@ -221,6 +221,9 @@ public class CdmiConnector {
 
     public HttpResponse setContainerMetadata(String path, String key,
             String value) throws CdmiConnectionException {
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
         try {
             HttpPut put = requestFactory
                     .newPut(CdmiTypes.CDMI_CONTAINER, path, "metadata:" + key)
