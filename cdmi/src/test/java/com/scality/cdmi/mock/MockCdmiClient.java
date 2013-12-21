@@ -39,6 +39,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -230,7 +231,11 @@ public class MockCdmiClient implements CdmiClient {
             } else if (remoteDirs.contains(dstKey)) {
                 destination = dstKey + "/" + KeyUtils.getBaseName(srcKey);
             }
-            if (!remoteDirs.contains(KeyUtils.getParentContainerName(destination))) {
+            if (srcKey.equals(destination)) {
+                return true;
+            }
+            if (!remoteDirs.contains(KeyUtils.getParentContainerName(destination)) ||
+                    remoteFiles.containsKey(destination)) {
                 return false;
             }
             remoteFiles.put(destination, remoteFiles.get(srcKey));
@@ -248,7 +253,9 @@ public class MockCdmiClient implements CdmiClient {
             } else if (remoteDirs.contains(dstKey)) {
                 destination = dstKey + "/" + KeyUtils.getBaseName(srcKey);
             }
-            if (!remoteDirs.contains(KeyUtils.getParentContainerName(destination))) {
+            if (!remoteDirs.contains(KeyUtils.getParentContainerName(destination)) ||
+                    destination.substring(0, destination.lastIndexOf("/")).startsWith(srcKey) ||
+                    srcKey.equals(destination)) {
                 return false;
             }                
             remoteDirs.add(destination);
@@ -307,12 +314,27 @@ public class MockCdmiClient implements CdmiClient {
 
     @Override
     public FileMetadata getMetadata(String key) throws IOException {
+        key = getContainerKey(key);  // Strip ending /
+        StringBuffer metaBuffer = new StringBuffer("{\"metadata\":{");
+        if (metaServer.containsKey(key)) {
+            boolean first = true;
+            for (Entry<String, String> entry: metaServer.get(key).entrySet()) {
+                if (!first) {
+                    metaBuffer.append(",");
+                }
+                metaBuffer.append("\"").append(entry.getKey()).append("\":");
+                metaBuffer.append("\"").append(entry.getValue()).append("\"");
+                first = false;
+            }
+        }
+        metaBuffer.append("}}");
+        String meta = metaBuffer.toString();
         if (remoteFiles.containsKey(key)) {
             return new FileMetadataImpl(key, remoteFiles.get(key).length(),
-                    100, 100, false, "{}");
-        } else if (remoteDirs.contains(getContainerKey(key))) {
+                    100, 100, false, meta);
+        } else if (remoteDirs.contains(key)) {
             return new FileMetadataImpl(getContainerName(key), -1, 100, 100,
-                    true, "{}");
+                    true, meta);
         } else {
             throw new FileNotFoundException();
         }
@@ -322,24 +344,19 @@ public class MockCdmiClient implements CdmiClient {
     public FileMetadata[] listMetadata(String key) throws IOException {
         ArrayList<FileMetadata> result = new ArrayList<FileMetadata>();
         if (remoteFiles.containsKey(key)) {
-            result.add(new FileMetadataImpl(key, remoteFiles.get(key).length(),
-                    100, 100, false, "{}"));
+            result.add(getMetadata(key));
         } else {
             key = getContainerKey(key);
             if (remoteDirs.contains(key)) {
                 for (String filename : remoteFiles.keySet()) {
                     if (key.equals(KeyUtils.getParentContainerName(filename))) {
-                        result.add(new FileMetadataImpl(filename, remoteFiles
-                                .get(filename).length(), 100, 100, false,
-                                "{}"));
+                        result.add(getMetadata(filename));
                     }
                 }
                 for (String dirname : remoteDirs) {
                     if (!dirname.equals(key) &&
                             key.equals(KeyUtils.getParentContainerName(dirname))) {
-                        result.add(new FileMetadataImpl(
-                                getContainerName(dirname), -1, 100, 100, true,
-                                "{}"));
+                        result.add(getMetadata(getContainerName(dirname)));
                     }
                 }
             } else {
