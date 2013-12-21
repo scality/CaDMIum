@@ -64,6 +64,7 @@ public class CdmiOutputStream extends OutputStream {
 	 * The maximum content length, in bytes, of each request to the CDMI server.
 	 */
 	private final int maxPutSize;
+	private final int maxPutThreads;
 	private String path;
 	private ByteArrayBuffer buffer;
 	private int pos_in_buffer;
@@ -111,6 +112,7 @@ public class CdmiOutputStream extends OutputStream {
 			int maxPutSize, int maxPutThreads) throws CdmiConnectionException {
 		this.connector = connector;
 		this.maxPutSize = maxPutSize;
+		this.maxPutThreads = maxPutThreads;
 		this.path = path;
 		this.buffer = null;
 		this.pos_in_buffer = 0;
@@ -134,6 +136,7 @@ public class CdmiOutputStream extends OutputStream {
 	 */
 	protected CdmiOutputStream() {
 		maxPutSize = 1;
+		maxPutThreads = 1;
 		// For tests.
 	}
 
@@ -204,9 +207,9 @@ public class CdmiOutputStream extends OutputStream {
 			executor.shutdown();
 			while (!executor.isTerminated()) {
 			}
-			executor = new ThreadPoolExecutor(20, 20, 0L,
+			executor = new ThreadPoolExecutor(maxPutThreads, maxPutThreads, 0L,
 					TimeUnit.MILLISECONDS,
-					new ArrayBlockingQueue<Runnable>(20),
+					new ArrayBlockingQueue<Runnable>(maxPutThreads),
 					new ThreadPoolExecutor.CallerRunsPolicy());
 		}
 
