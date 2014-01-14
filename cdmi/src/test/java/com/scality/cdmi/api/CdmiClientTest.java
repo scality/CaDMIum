@@ -57,178 +57,179 @@ import com.scality.cdmi.mock.MockCdmiClient;
  * @author ziad.bizri@ezako.com for Scality
  */
 public class CdmiClientTest {
-	private static String BASEDIR = "/testdirs/";
+    private static String BASEDIR = "/testdirs/";
 
-	protected CdmiClient client;
+    protected CdmiClient client;
 
-	protected CdmiClient getTestClient() {
-		return new MockCdmiClient();
-	}
+    protected CdmiClient getTestClient() {
+        return new MockCdmiClient();
+    }
 
-	@Before
-	public void setUp() throws Exception {
-		client = getTestClient();
-		client.delete(BASEDIR, true /* recursive */);
-		client.makedir(BASEDIR);
-	}
+    @Before
+    public void setUp() throws Exception {
+        client = getTestClient();
+        client.delete(BASEDIR, true /* recursive */);
+        client.makedir(BASEDIR);
+    }
 
-	@After
-	public void tearDown() throws Exception {
-		client.delete(BASEDIR, true /* recursive */);
-	}
+    @After
+    public void tearDown() throws Exception {
+        client.delete(BASEDIR, true /* recursive */);
+    }
 
-	private int readAllContentsToBuffer(InputStream in, byte[] buffer)
-			throws IOException {
-		return readSomeContentsToBuffer(in, buffer, buffer.length);
-	}
+    private int readAllContentsToBuffer(InputStream in, byte[] buffer)
+            throws IOException {
+        return readSomeContentsToBuffer(in, buffer, buffer.length);
+    }
 
-	// Utility for reading a stream up to a specific length.
-	private int readSomeContentsToBuffer(InputStream in, byte[] buffer,
-			int length) throws IOException {
-		int read = 0;
-		int offset = 0;
-		int remaininglenth = length;
-		int lastread;
-		while ((lastread = in.read(buffer, offset, remaininglenth)) > 0) {
-			offset += lastread;
-			remaininglenth -= lastread;
-			read += lastread;
-		}
-		return read;
-	}
+    // Utility for reading a stream up to a specific length.
+    private int readSomeContentsToBuffer(InputStream in, byte[] buffer,
+            int length) throws IOException {
+        int read = 0;
+        int offset = 0;
+        int remaininglenth = length;
+        int lastread;
+        while ((lastread = in.read(buffer, offset, remaininglenth)) > 0) {
+            offset += lastread;
+            remaininglenth -= lastread;
+            read += lastread;
+        }
+        return read;
+    }
 
-	/**
-	 * Test dots at the beginning of dirnames.
-	 * 
-	 * @throws IOException
-	 */
-	@Test
-	public void testPoint() throws IOException {
-		String key = BASEDIR + "foo/.cat";
-		Assert.assertFalse(client.exists(key));
-		Assert.assertTrue(client.makedirs(key));
-		Assert.assertTrue(client.exists(key));
-		FileMetadata status = client.getMetadata(key);
-		Assert.assertEquals(BASEDIR + "foo/.cat/", status.getKey());
+    /**
+     * Test dots at the beginning of dirnames.
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testPoint() throws IOException {
+        String key = BASEDIR + "foo/.cat";
+        Assert.assertFalse(client.exists(key));
+        Assert.assertTrue(client.makedirs(key));
+        Assert.assertTrue(client.exists(key));
+        FileMetadata status = client.getMetadata(key);
+        Assert.assertEquals(BASEDIR + "foo/.cat/", status.getKey());
 
-		Assert.assertTrue(client.delete(key, false));
-	}
+        Assert.assertTrue(client.delete(key, false));
+    }
 
-	/**
-	 * Test touching a file
-	 * 
-	 * @throws IOException
-	 */
-	@Test
-	public void testTouch() throws IOException {
-		String path = BASEDIR + "foo.txt";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.touch(path));
-		Assert.assertTrue(client.exists(path));
-	}
+    /**
+     * Test touching a file
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testTouch() throws IOException {
+        String path = BASEDIR + "foo.txt";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.touch(path));
+        Assert.assertTrue(client.exists(path));
+        Assert.assertFalse(client.touch(path));
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testGetMetadataEmpty() throws IOException {
-		String path = BASEDIR + "cat.txt";
-		Assert.assertFalse(client.exists(path));
-		boolean exceptionRaised = false;
-		try {
-			@SuppressWarnings("unused")
-			FileMetadata meta = client.getMetadata(path);
-		} catch (FileNotFoundException e) {
-			exceptionRaised = true;
-		}
-		Assert.assertTrue(exceptionRaised);
-	}
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testGetMetadataEmpty() throws IOException {
+        String path = BASEDIR + "cat.txt";
+        Assert.assertFalse(client.exists(path));
+        boolean exceptionRaised = false;
+        try {
+            @SuppressWarnings("unused")
+            FileMetadata meta = client.getMetadata(path);
+        } catch (FileNotFoundException e) {
+            exceptionRaised = true;
+        }
+        Assert.assertTrue(exceptionRaised);
+    }
 
-	/**
-	 * Test getting metadata of a file
-	 * 
-	 * @throws IOException
-	 */
-	@Test
-	public void testGetMetadata() throws IOException {
-		// Try on a file.
-		String path = BASEDIR + "bar.txt";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.touch(path));
-		FileMetadata meta = client.getMetadata(path);
-		Assert.assertEquals(0L, meta.getLength());
-		Assert.assertFalse(meta.isContainer());
-		Assert.assertEquals(path, meta.getKey());
-		OutputStream out = client.append(path);
-		out.write(new byte[] { 42, 43, 44 });
-		out.close();
-		meta = client.getMetadata(path);
-		Assert.assertEquals(3L, meta.getLength());
-		// Try on a container.
-		path = BASEDIR + "foo/";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.makedir(path));
-		meta = client.getMetadata(path);
-		Assert.assertEquals(-1, meta.getLength());
-		Assert.assertTrue(meta.isContainer());
-		Assert.assertEquals(path, meta.getKey());
-		// Try on a container with no ending slash.
-		path = BASEDIR + "bar";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.makedir(path));
-		meta = client.getMetadata(path);
-		Assert.assertEquals(-1, meta.getLength());
-		Assert.assertTrue(meta.isContainer());
-		Assert.assertEquals(path + "/", meta.getKey());
-	}
+    /**
+     * Test getting metadata of a file
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testGetMetadata() throws IOException {
+        // Try on a file.
+        String path = BASEDIR + "bar.txt";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.touch(path));
+        FileMetadata meta = client.getMetadata(path);
+        Assert.assertEquals(0L, meta.getLength());
+        Assert.assertFalse(meta.isContainer());
+        Assert.assertEquals(path, meta.getKey());
+        OutputStream out = client.append(path);
+        out.write(new byte[] { 42, 43, 44 });
+        out.close();
+        meta = client.getMetadata(path);
+        Assert.assertEquals(3L, meta.getLength());
+        // Try on a container.
+        path = BASEDIR + "foo/";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.makedir(path));
+        meta = client.getMetadata(path);
+        Assert.assertEquals(-1, meta.getLength());
+        Assert.assertTrue(meta.isContainer());
+        Assert.assertEquals(path, meta.getKey());
+        // Try on a container with no ending slash.
+        path = BASEDIR + "bar";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.makedir(path));
+        meta = client.getMetadata(path);
+        Assert.assertEquals(-1, meta.getLength());
+        Assert.assertTrue(meta.isContainer());
+        Assert.assertEquals(path + "/", meta.getKey());
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testListMetadata() throws IOException {
-		String path = BASEDIR + "quux/";
-		TreeSet<String> filenames = new TreeSet<String>();
-		filenames.addAll(Arrays.asList("foo", "bar", "baz"));
-		TreeSet<String> dirnames = new TreeSet<String>();
-		dirnames.addAll(Arrays.asList("cat", "car"));
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.makedir(path));
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testListMetadata() throws IOException {
+        String path = BASEDIR + "quux/";
+        TreeSet<String> filenames = new TreeSet<String>();
+        filenames.addAll(Arrays.asList("foo", "bar", "baz"));
+        TreeSet<String> dirnames = new TreeSet<String>();
+        dirnames.addAll(Arrays.asList("cat", "car"));
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.makedir(path));
 
-		for (String name : filenames) {
-			Assert.assertTrue(client.touch(path + name));
-		}
-		for (String name : dirnames) {
-			Assert.assertTrue(client.makedir(path + name + "/"));
-		}
+        for (String name : filenames) {
+            Assert.assertTrue(client.touch(path + name));
+        }
+        for (String name : dirnames) {
+            Assert.assertTrue(client.makedir(path + name + "/"));
+        }
 
-		FileMetadata[] allmeta = client.listMetadata(path);
-		Assert.assertEquals(dirnames.size() + filenames.size(), allmeta.length);
+        FileMetadata[] allmeta = client.listMetadata(path);
+        Assert.assertEquals(dirnames.size() + filenames.size(), allmeta.length);
 
-		for (FileMetadata meta : client.listMetadata(path)) {
-			File file = new File(meta.getKey());
-			String basename = file.getName();
-			if (meta.isContainer()) {
-				Assert.assertEquals(-1, meta.getLength());
-				dirnames.remove(basename);
-			} else {
-				Assert.assertEquals(0, meta.getLength());
-				filenames.remove(basename);
-			}
-		}
-		Assert.assertTrue(filenames.isEmpty());
-		Assert.assertTrue(dirnames.isEmpty());
-	}
-	
-	/**
+        for (FileMetadata meta : client.listMetadata(path)) {
+            File file = new File(meta.getKey());
+            String basename = file.getName();
+            if (meta.isContainer()) {
+                Assert.assertEquals(-1, meta.getLength());
+                dirnames.remove(basename);
+            } else {
+                Assert.assertEquals(0, meta.getLength());
+                filenames.remove(basename);
+            }
+        }
+        Assert.assertTrue(filenames.isEmpty());
+        Assert.assertTrue(dirnames.isEmpty());
+    }
+
+    /**
      * @throws IOException
      */
     @Test
     public void testListMultiLevelMetadata() throws IOException {
         String path = BASEDIR + "quux/";
         Assert.assertTrue(client.makedir(path));
-        String[] subdirs = {"foo", "bar", "baz"};
-        for (String subd: subdirs) {
+        String[] subdirs = { "foo", "bar", "baz" };
+        for (String subd : subdirs) {
             Assert.assertTrue(client.makedir(path + subd));
         }
         Assert.assertTrue(client.touch(path + "foo/cat.txt"));
@@ -236,288 +237,287 @@ public class CdmiClientTest {
         FileMetadata[] meta = client.listMetadata(path);
         Assert.assertEquals(3, meta.length);
     }
-	
-	
 
-	@Test
-	public void testListEmptyFile() throws IOException {
-		String path = BASEDIR + "quux";
-		Assert.assertFalse(client.exists(path));
-		boolean exceptionRaised = false;
-		try {
-			client.listMetadata(path);
-		} catch (FileNotFoundException e) {
-			exceptionRaised = true;
-		}
-		Assert.assertTrue("Operation should raise a FileNotFound exception",
-				exceptionRaised);
-	}
-	
-	@Test
-	public void testListEmptyDir() throws IOException {
-		String path = BASEDIR + "quux/";
-		Assert.assertFalse(client.exists(path));
-		boolean exceptionRaised = false;
-		try {
-			client.listMetadata(path);
-		} catch (FileNotFoundException e) {
-			exceptionRaised = true;
-		}
-		Assert.assertTrue("Operation should raise a FileNotFound exception",
-				exceptionRaised);
-		Assert.assertTrue(client.makedir(path));
-		FileMetadata[] meta = client.listMetadata(path);
-		Assert.assertEquals(0, meta.length);
-	}
+    @Test
+    public void testListEmptyFile() throws IOException {
+        String path = BASEDIR + "quux";
+        Assert.assertFalse(client.exists(path));
+        boolean exceptionRaised = false;
+        try {
+            client.listMetadata(path);
+        } catch (FileNotFoundException e) {
+            exceptionRaised = true;
+        }
+        Assert.assertTrue("Operation should raise a FileNotFound exception",
+                exceptionRaised);
+    }
 
+    @Test
+    public void testListEmptyDir() throws IOException {
+        String path = BASEDIR + "quux/";
+        Assert.assertFalse(client.exists(path));
+        boolean exceptionRaised = false;
+        try {
+            client.listMetadata(path);
+        } catch (FileNotFoundException e) {
+            exceptionRaised = true;
+        }
+        Assert.assertTrue("Operation should raise a FileNotFound exception",
+                exceptionRaised);
+        Assert.assertTrue(client.makedir(path));
+        FileMetadata[] meta = client.listMetadata(path);
+        Assert.assertEquals(0, meta.length);
+    }
 
-	@Test
-	public void testWriting() throws IOException {
-		// Write a first string.
-		String path = BASEDIR + "cat.txt";
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0L);
-		String teststring = "thisisateststring";
-		out.write(teststring.getBytes());
-		out.close();
+    @Test
+    public void testWriting() throws IOException {
+        // Write a first string.
+        String path = BASEDIR + "cat.txt";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisateststring";
+        out.write(teststring.getBytes());
+        out.close();
 
-		int pos = teststring.length();
-		FileMetadata meta = client.getMetadata(path);
-		Assert.assertEquals(pos, meta.getLength());
-		Assert.assertFalse(meta.isContainer());
-		Assert.assertEquals(path, meta.getKey());
+        int pos = teststring.length();
+        FileMetadata meta = client.getMetadata(path);
+        Assert.assertEquals(pos, meta.getLength());
+        Assert.assertFalse(meta.isContainer());
+        Assert.assertEquals(path, meta.getKey());
 
-		InputStream is = client.open(path);
-		byte[] buff = new byte[pos];
-		Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
-		is.close();
-		Assert.assertEquals(teststring, new String(buff, 0, pos));
+        InputStream is = client.open(path);
+        byte[] buff = new byte[pos];
+        Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
+        is.close();
+        Assert.assertEquals(teststring, new String(buff, 0, pos));
 
-		// Add an additional string.
-		out = client.append(path);
-		String additionalstring = "additional";
-		String finalstring = teststring + additionalstring;
-		out.write(additionalstring.getBytes());
-		out.close();
+        // Add an additional string.
+        out = client.append(path);
+        String additionalstring = "additional";
+        String finalstring = teststring + additionalstring;
+        out.write(additionalstring.getBytes());
+        out.close();
 
-		pos = finalstring.length();
-		meta = client.getMetadata(path);
-		Assert.assertEquals(pos, meta.getLength());
-		Assert.assertFalse(meta.isContainer());
-		Assert.assertEquals(path, meta.getKey());
+        pos = finalstring.length();
+        meta = client.getMetadata(path);
+        Assert.assertEquals(pos, meta.getLength());
+        Assert.assertFalse(meta.isContainer());
+        Assert.assertEquals(path, meta.getKey());
 
-		is = client.open(path);
-		buff = new byte[pos];
-		Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
-		is.close();
-		Assert.assertEquals(finalstring, new String(buff, 0, pos));
+        is = client.open(path);
+        buff = new byte[pos];
+        Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
+        is.close();
+        Assert.assertEquals(finalstring, new String(buff, 0, pos));
 
-		// Now try to write over.
-		out = client.write(path, 6L);
-		String replace = "replace";
-		out.write(replace.getBytes());
-		out.close();
+        // Now try to write over.
+        out = client.write(path, 6L);
+        String replace = "replace";
+        out.write(replace.getBytes());
+        out.close();
 
-		// Meta is unchanged
-		meta = client.getMetadata(path);
-		Assert.assertEquals(pos, meta.getLength());
-		Assert.assertFalse(meta.isContainer());
-		Assert.assertEquals(path, meta.getKey());
+        // Meta is unchanged
+        meta = client.getMetadata(path);
+        Assert.assertEquals(pos, meta.getLength());
+        Assert.assertFalse(meta.isContainer());
+        Assert.assertEquals(path, meta.getKey());
 
-		// Read again
-		is = client.open(path);
-		buff = new byte[pos];
-		Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
-		is.close();
-		Assert.assertEquals("thisisreplaceringadditional", new String(buff, 0, pos));
-	}
+        // Read again
+        is = client.open(path);
+        buff = new byte[pos];
+        Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
+        is.close();
+        Assert.assertEquals("thisisreplaceringadditional", new String(buff, 0,
+                pos));
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testWritingAndOther() throws IOException {
-		String path = BASEDIR + "bas.txt";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0);
-		out.write("foo".getBytes());
-		Assert.assertTrue(client.exists(path));
-		out.write("bar".getBytes());
-		FileMetadata meta = client.getMetadata(path);
-		Assert.assertEquals(path, meta.getKey());
-		out.close();
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testReadEmptyFile() throws IOException {
-		String path = BASEDIR + "cat.txt";
-		Assert.assertFalse(client.exists(path));
-		boolean exceptionRaised = false;
-		try {
-			@SuppressWarnings("unused")
-			InputStream in = client.open(path);
-		} catch (FileNotFoundException e) {
-			exceptionRaised = true;
-		}
-		Assert.assertTrue(exceptionRaised);
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testReading() throws IOException {
-		// Write a first string.
-		String path = BASEDIR + "car.txt";
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0L);
-		String teststring = "thisisateststring";
-		out.write(teststring.getBytes());
-		out.close();
-
-		int size = teststring.length();
-		InputStream is = client.open(path);
-		byte[] buff = new byte[size];
-		Assert.assertEquals(size, readAllContentsToBuffer(is, buff));
-		is.close();
-		Assert.assertEquals(teststring, new String(buff, 0, size));
-
-		// Now read from an offset
-		is = client.open(path, 5L);
-		size -= 5;
-		buff = new byte[size];
-		Assert.assertEquals(size, readAllContentsToBuffer(is, buff));
-		is.close();
-		Assert.assertEquals("sateststring", new String(buff, 0, size));
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testSkip() throws IOException {
-		String path = BASEDIR + "bar.dat";
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0L);
-		String teststring = "thisisamuchlongerteststring";
-		out.write(teststring.getBytes());
-		out.close();
-
-		// Test that we can skip before the first read.
-		InputStream in = client.open(path);
-		Assert.assertEquals(6, in.skip(6));
-		Assert.assertEquals(4, in.skip(4));
-		int size = 10;
-		byte[] buff = new byte[size];
-		Assert.assertEquals(size, readAllContentsToBuffer(in, buff));
-		in.close();
-		Assert.assertEquals("hlongertes", new String(buff, 0, size));
-
-		// Test that we can skip after the first read.
-		in = client.open(path);
-		Assert.assertEquals(6, readSomeContentsToBuffer(in, buff, 6));
-		Assert.assertEquals(4, in.skip(4));
-		Assert.assertEquals(10, readSomeContentsToBuffer(in, buff, 10));
-		in.close();
-		Assert.assertEquals("hlongertes", new String(buff, 0, size));
-
-		// Test the skip beyond limit.
-		in = client.open(path);
-		in.skip(200);
-		// assertEquals(teststring.length(), in.skip(200));
-		Assert.assertEquals(-1, in.read(buff, 0, size));
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testCopy() throws IOException {
-		String path = BASEDIR + "bar.bat";
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0L);
-		String teststring = "thisisaveryverylongteststring";
-		out.write(teststring.getBytes());
-		out.close();
-
-		String dest_path = BASEDIR + "bar.bat2";
-		out = client.write(dest_path, 0);
-		InputStream in = client.open(path);
-		byte buf[] = new byte[teststring.length()];
-		int bytesRead = in.read(buf);
-		while (bytesRead >= 0) {
-			out.write(buf, 0, bytesRead);
-			bytesRead = in.read(buf);
-		}
-		in.close();
-		out.close();
-
-		// Now check the contents
-		in = client.open(dest_path);
-		buf = new byte[teststring.length()];
-		Assert.assertEquals(teststring.length(), readAllContentsToBuffer(in, buf));
-		in.close();
-		Assert.assertEquals(teststring, new String(buf));
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMove() throws IOException {
-		String path = BASEDIR + "quux.txt";
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0L);
-		String teststring = "thisisateststring";
-		out.write(teststring.getBytes());
-		out.close();
-
-		String pathTo = BASEDIR + "move.txt";
-		Assert.assertFalse(client.exists(pathTo));
-		Assert.assertTrue(client.move(path, pathTo));
-		Assert.assertTrue(client.exists(pathTo));
-		Assert.assertFalse(client.exists(path));
-
-		// Now read from an offset
-		InputStream is = client.open(pathTo);
-		int size = teststring.length();
-		byte[] buff = new byte[size];
-		Assert.assertEquals(size, readAllContentsToBuffer(is, buff));
-		is.close();
-		Assert.assertEquals(teststring, new String(buff, 0, size));
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMoveToParent() throws IOException {
-		String dir = BASEDIR + "bar/.baz/.cat/";
-		Assert.assertTrue(client.makedirs(dir));
-		String path = dir + "quux.txt";
-		Assert.assertTrue(client.touch(path));
-		OutputStream out = client.write(path, 0L);
-		String teststring = "thisisateststring";
-		out.write(teststring.getBytes());
-		out.close();
-
-		String parentpath = BASEDIR + "bar/.baz/quux.txt";
-		Assert.assertTrue(client.move(path, parentpath));
-		Assert.assertTrue(client.exists(parentpath));
-		FileMetadata meta = client.getMetadata(parentpath);
-		Assert.assertEquals(17, meta.getLength());
-	}
-	
     /**
      * @throws IOException
      */
     @Test
-	public void testMoveFileToNonExisting() throws IOException {
-	    String path = BASEDIR + "quux.txt";
+    public void testWritingAndOther() throws IOException {
+        String path = BASEDIR + "bas.txt";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0);
+        out.write("foo".getBytes());
+        Assert.assertTrue(client.exists(path));
+        out.write("bar".getBytes());
+        FileMetadata meta = client.getMetadata(path);
+        Assert.assertEquals(path, meta.getKey());
+        out.close();
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testReadEmptyFile() throws IOException {
+        String path = BASEDIR + "cat.txt";
+        Assert.assertFalse(client.exists(path));
+        boolean exceptionRaised = false;
+        try {
+            @SuppressWarnings("unused")
+            InputStream in = client.open(path);
+        } catch (FileNotFoundException e) {
+            exceptionRaised = true;
+        }
+        Assert.assertTrue(exceptionRaised);
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testReading() throws IOException {
+        // Write a first string.
+        String path = BASEDIR + "car.txt";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisateststring";
+        out.write(teststring.getBytes());
+        out.close();
+
+        int size = teststring.length();
+        InputStream is = client.open(path);
+        byte[] buff = new byte[size];
+        Assert.assertEquals(size, readAllContentsToBuffer(is, buff));
+        is.close();
+        Assert.assertEquals(teststring, new String(buff, 0, size));
+
+        // Now read from an offset
+        is = client.open(path, 5L);
+        size -= 5;
+        buff = new byte[size];
+        Assert.assertEquals(size, readAllContentsToBuffer(is, buff));
+        is.close();
+        Assert.assertEquals("sateststring", new String(buff, 0, size));
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testSkip() throws IOException {
+        String path = BASEDIR + "bar.dat";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisamuchlongerteststring";
+        out.write(teststring.getBytes());
+        out.close();
+
+        // Test that we can skip before the first read.
+        InputStream in = client.open(path);
+        Assert.assertEquals(6, in.skip(6));
+        Assert.assertEquals(4, in.skip(4));
+        int size = 10;
+        byte[] buff = new byte[size];
+        Assert.assertEquals(size, readAllContentsToBuffer(in, buff));
+        in.close();
+        Assert.assertEquals("hlongertes", new String(buff, 0, size));
+
+        // Test that we can skip after the first read.
+        in = client.open(path);
+        Assert.assertEquals(6, readSomeContentsToBuffer(in, buff, 6));
+        Assert.assertEquals(4, in.skip(4));
+        Assert.assertEquals(10, readSomeContentsToBuffer(in, buff, 10));
+        in.close();
+        Assert.assertEquals("hlongertes", new String(buff, 0, size));
+
+        // Test the skip beyond limit.
+        in = client.open(path);
+        in.skip(200);
+        // assertEquals(teststring.length(), in.skip(200));
+        Assert.assertEquals(-1, in.read(buff, 0, size));
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testCopy() throws IOException {
+        String path = BASEDIR + "bar.bat";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisaveryverylongteststring";
+        out.write(teststring.getBytes());
+        out.close();
+
+        String dest_path = BASEDIR + "bar.bat2";
+        out = client.write(dest_path, 0);
+        InputStream in = client.open(path);
+        byte buf[] = new byte[teststring.length()];
+        int bytesRead = in.read(buf);
+        while (bytesRead >= 0) {
+            out.write(buf, 0, bytesRead);
+            bytesRead = in.read(buf);
+        }
+        in.close();
+        out.close();
+
+        // Now check the contents
+        in = client.open(dest_path);
+        buf = new byte[teststring.length()];
+        Assert.assertEquals(teststring.length(),
+                readAllContentsToBuffer(in, buf));
+        in.close();
+        Assert.assertEquals(teststring, new String(buf));
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMove() throws IOException {
+        String path = BASEDIR + "quux.txt";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisateststring";
+        out.write(teststring.getBytes());
+        out.close();
+
+        String pathTo = BASEDIR + "move.txt";
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertTrue(client.move(path, pathTo));
+        Assert.assertTrue(client.exists(pathTo));
+        Assert.assertFalse(client.exists(path));
+
+        // Now read from an offset
+        InputStream is = client.open(pathTo);
+        int size = teststring.length();
+        byte[] buff = new byte[size];
+        Assert.assertEquals(size, readAllContentsToBuffer(is, buff));
+        is.close();
+        Assert.assertEquals(teststring, new String(buff, 0, size));
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveToParent() throws IOException {
+        String dir = BASEDIR + "bar/.baz/.cat/";
+        Assert.assertTrue(client.makedirs(dir));
+        String path = dir + "quux.txt";
+        Assert.assertTrue(client.touch(path));
+        OutputStream out = client.write(path, 0L);
+        String teststring = "thisisateststring";
+        out.write(teststring.getBytes());
+        out.close();
+
+        String parentpath = BASEDIR + "bar/.baz/quux.txt";
+        Assert.assertTrue(client.move(path, parentpath));
+        Assert.assertTrue(client.exists(parentpath));
+        FileMetadata meta = client.getMetadata(parentpath);
+        Assert.assertEquals(17, meta.getLength());
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveFileToNonExisting() throws IOException {
+        String path = BASEDIR + "quux.txt";
         Assert.assertTrue(client.touch(path));
         OutputStream out = client.write(path, 0L);
         String teststring = "thisisateststring";
@@ -529,72 +529,72 @@ public class CdmiClientTest {
         Assert.assertFalse(client.move(path, pathTo));
         Assert.assertFalse(client.exists(pathTo));
         Assert.assertTrue(client.exists(path));
-        
+
         pathTo = BASEDIR + "cat/";
         Assert.assertFalse(client.exists(pathTo));
         Assert.assertFalse(client.move(path, pathTo));
         Assert.assertFalse(client.exists(pathTo));
         Assert.assertTrue(client.exists(path));
-	}
-	
+    }
+
     /**
      * @throws IOException
      */
-   @Test
-   public void testMoveDirToNonExisting() throws IOException {
-       String path = BASEDIR + "quux/";
-       Assert.assertTrue(client.makedir(path));
+    @Test
+    public void testMoveDirToNonExisting() throws IOException {
+        String path = BASEDIR + "quux/";
+        Assert.assertTrue(client.makedir(path));
 
-       String pathTo = BASEDIR + "foo/bar/";
-       Assert.assertFalse(client.exists(pathTo));
-       Assert.assertFalse(client.move(path, pathTo));
-       Assert.assertFalse(client.exists(pathTo));
-       Assert.assertTrue(client.exists(path));
+        String pathTo = BASEDIR + "foo/bar/";
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertFalse(client.move(path, pathTo));
+        Assert.assertFalse(client.exists(pathTo));
+        Assert.assertTrue(client.exists(path));
     }
-   
-   /**
-    * @throws IOException
-    */
-   @Test
-   public void testMoveToSelf() throws IOException {
-       String path = BASEDIR + "cat/";
-       Assert.assertTrue(client.makedir(path));
-       String foo = path + "foo";
-       Assert.assertTrue(client.touch(foo));
-       
-       // The actual move to self test.
-       Assert.assertTrue(client.move(foo, foo));
-       Assert.assertFalse(client.move(path, path));
-   }
-   
-   /**
-    * @throws IOException
-    */
-   @Test
-   public void testMoveToSubdir() throws IOException {
-       String parent = BASEDIR + "car/";
-       Assert.assertTrue(client.makedir(parent));
-       String child = parent + "child/";
-       String childchild = child + "child2/";
-       
-       Assert.assertFalse(client.move(parent, child));
-       Assert.assertFalse(client.move(parent, childchild));
-   }
-   
-   /**
-    * @throws IOException
-    */
-   @Test
-   public void testMoveDirToExistingFile() throws IOException {
-       String dirname = BASEDIR + "path/to/dir";
-       Assert.assertTrue(client.makedirs(dirname));
-       String otherdir = BASEDIR + "path/tooth/erdir/";
-       String filename = otherdir + "bar";
-       Assert.assertTrue(client.makedirs(otherdir));
-       Assert.assertTrue(client.touch(filename));
-       
-       Assert.assertFalse(client.move(dirname, filename));
-   }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveToSelf() throws IOException {
+        String path = BASEDIR + "cat/";
+        Assert.assertTrue(client.makedir(path));
+        String foo = path + "foo";
+        Assert.assertTrue(client.touch(foo));
+
+        // The actual move to self test.
+        Assert.assertTrue(client.move(foo, foo));
+        Assert.assertFalse(client.move(path, path));
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveToSubdir() throws IOException {
+        String parent = BASEDIR + "car/";
+        Assert.assertTrue(client.makedir(parent));
+        String child = parent + "child/";
+        String childchild = child + "child2/";
+
+        Assert.assertFalse(client.move(parent, child));
+        Assert.assertFalse(client.move(parent, childchild));
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveDirToExistingFile() throws IOException {
+        String dirname = BASEDIR + "path/to/dir";
+        Assert.assertTrue(client.makedirs(dirname));
+        String otherdir = BASEDIR + "path/tooth/erdir/";
+        String filename = otherdir + "bar";
+        Assert.assertTrue(client.makedirs(otherdir));
+        Assert.assertTrue(client.touch(filename));
+
+        Assert.assertFalse(client.move(dirname, filename));
+    }
 
     /**
      * @throws IOException
@@ -605,239 +605,242 @@ public class CdmiClientTest {
         Assert.assertTrue(client.touch(filepath));
         String dirpath = BASEDIR + "bar/cat/car";
         Assert.assertTrue(client.makedirs(dirpath));
-       
+
         Assert.assertTrue(client.move(filepath, dirpath));
         Assert.assertFalse(client.exists(filepath));
         Assert.assertTrue(client.exists(dirpath + "/cat.txt"));
     }
-   
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMoveDir() throws IOException {
-		String path1 = BASEDIR + "dir1";
-		String file1 = path1 + "/foo";
-		String path2 = BASEDIR + "dir2";
-		Assert.assertFalse(client.exists(path1));
-		Assert.assertFalse(client.exists(path2));
-		Assert.assertTrue(client.makedir(path1));
-		Assert.assertTrue(client.touch(file1));
-		Assert.assertTrue(client.move(path1, path2));
-		Assert.assertFalse(client.exists(path1));
-		Assert.assertTrue(client.exists(path2));
-		Assert.assertFalse(client.exists(file1));
-		Assert.assertTrue(client.exists(file1.replace("dir1", "dir2")));
-	}
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMoveDirToOtherDir() throws IOException {
-	    String dir1 = BASEDIR + "dir1";
-	    Assert.assertTrue(client.makedir(dir1));
-	    Assert.assertTrue(client.touch(dir1 + "/foo"));
-	    Assert.assertTrue(client.touch(dir1 + "/bar"));
-	    String dir2 = BASEDIR + "dir2";
-	    Assert.assertTrue(client.makedir(dir2));
-	    
-	    
-	    Assert.assertTrue(client.move(dir1, dir2));
-	    Assert.assertFalse(client.exists(dir1));
-	    Assert.assertFalse(client.exists(dir1 + "/foo"));
-	    Assert.assertTrue(client.exists(dir2 + "/dir1"));
-	    Assert.assertTrue(client.exists(dir2 + "/dir1/foo"));
-	}
-	
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMakeDir() throws IOException {
-		String path = BASEDIR + "foo/bar/baz/cat/quux/";
-		Assert.assertFalse(client.makedir(path));
-		Assert.assertFalse(client.exists(BASEDIR + "foo/"));
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveDir() throws IOException {
+        String path1 = BASEDIR + "dir1";
+        String file1 = path1 + "/foo";
+        String path2 = BASEDIR + "dir2";
+        Assert.assertFalse(client.exists(path1));
+        Assert.assertFalse(client.exists(path2));
+        Assert.assertTrue(client.makedir(path1));
+        Assert.assertTrue(client.touch(file1));
+        Assert.assertTrue(client.move(path1, path2));
+        Assert.assertFalse(client.exists(path1));
+        Assert.assertTrue(client.exists(path2));
+        Assert.assertFalse(client.exists(file1));
+        Assert.assertTrue(client.exists(file1.replace("dir1", "dir2")));
+    }
 
-		path = BASEDIR + "bar/";
-		Assert.assertTrue(client.makedir(path));
-		Assert.assertTrue(client.exists(path));
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMoveDirToOtherDir() throws IOException {
+        String dir1 = BASEDIR + "dir1";
+        Assert.assertTrue(client.makedir(dir1));
+        Assert.assertTrue(client.touch(dir1 + "/foo"));
+        Assert.assertTrue(client.touch(dir1 + "/bar"));
+        String dir2 = BASEDIR + "dir2";
+        Assert.assertTrue(client.makedir(dir2));
 
-		path = BASEDIR + "noslash";
-		Assert.assertTrue(client.makedir(path));
-		Assert.assertTrue(client.exists(path));
-	}
+        Assert.assertTrue(client.move(dir1, dir2));
+        Assert.assertFalse(client.exists(dir1));
+        Assert.assertFalse(client.exists(dir1 + "/foo"));
+        Assert.assertTrue(client.exists(dir2 + "/dir1"));
+        Assert.assertTrue(client.exists(dir2 + "/dir1/foo"));
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMakeDirs() throws IOException {
-		String path = BASEDIR + "foo/bar/baz/cat/quux/";
-		Assert.assertTrue(client.makedirs(path));
-		// Fails the second time.
-		Assert.assertFalse(client.makedirs(path));
-		Assert.assertTrue(client.exists(BASEDIR + "foo/"));
-		Assert.assertTrue(client.exists(BASEDIR + "foo/bar/baz/"));
-		Assert.assertFalse(client.makedirs(BASEDIR + "foo/bar/baz"));
-	}
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMakeDir() throws IOException {
+        String path = BASEDIR + "foo/bar/baz/cat/quux/";
+        Assert.assertFalse(client.makedir(path));
+        Assert.assertFalse(client.exists(BASEDIR + "foo/"));
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testMakeDirsException() throws IOException {
-		String path = BASEDIR + "foo/bar";
-		Assert.assertTrue(client.makedir(BASEDIR + "foo"));
-		Assert.assertTrue(client.touch(path));
-		String fulldir = path + "/baz/cat/";
-		boolean exceptionRaised = false;
-		try {
-			client.makedirs(fulldir);
-		} catch (CdmiConnectionException e) {
-			exceptionRaised = true;
-		}
-		Assert.assertTrue(exceptionRaised);
-	}
+        path = BASEDIR + "bar/";
+        Assert.assertTrue(client.makedir(path));
+        Assert.assertTrue(client.exists(path));
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testDelete() throws IOException {
-		String path = BASEDIR + "foo.dat";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertTrue(client.touch(path));
-		Assert.assertTrue(client.exists(path));
-		Assert.assertTrue(client.delete(path, false));
-		Assert.assertFalse(client.exists(path));
-	}
+        path = BASEDIR + "noslash";
+        Assert.assertTrue(client.makedir(path));
+        Assert.assertTrue(client.exists(path));
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testDeleteContainer() throws IOException {
-		String path = BASEDIR + "bar";
-		Assert.assertFalse(client.exists(path));
-		Assert.assertFalse(client.delete(path, false));
-		Assert.assertTrue(client.makedir(path));
-		Assert.assertTrue(client.delete(path, false));
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMakeDirs() throws IOException {
+        String path = BASEDIR + "foo/bar/baz/cat/quux/";
+        Assert.assertTrue(client.makedirs(path));
+        // Fails the second time.
+        Assert.assertFalse(client.makedirs(path));
+        Assert.assertTrue(client.exists(BASEDIR + "foo/"));
+        Assert.assertTrue(client.exists(BASEDIR + "foo/bar/baz/"));
+        Assert.assertFalse(client.makedirs(BASEDIR + "foo/bar/baz"));
+    }
 
-		Assert.assertTrue(client.makedir(path));
-		Assert.assertTrue(client.touch(path + "/foo.dat"));
-		boolean exceptionRaised = false;
-		try {
-			client.delete(path, false);
-		} catch (IOException e) {
-			exceptionRaised = true;
-		}
-		Assert.assertTrue(exceptionRaised);
-	}
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testMakeDirsException() throws IOException {
+        String path = BASEDIR + "foo/bar";
+        Assert.assertTrue(client.makedir(BASEDIR + "foo"));
+        Assert.assertTrue(client.touch(path));
+        String fulldir = path + "/baz/cat/";
+        boolean exceptionRaised = false;
+        try {
+            client.makedirs(fulldir);
+        } catch (CdmiConnectionException e) {
+            exceptionRaised = true;
+        }
+        Assert.assertTrue(exceptionRaised);
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	@Test
-	public void testPutAndGet() throws IOException {
-		String path = BASEDIR + "testPut";
-		File testFile = File.createTempFile("tempfile", "testPut");
-		File outputFile = File.createTempFile("tempfile", "testGet");
-		BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
-		final String contents = "This is a test file that is going to be sent out.";
-		writer.write(contents);
-		writer.close();
-		Assert.assertFalse(client.get(path, outputFile));
-		Assert.assertTrue(client.put(path, testFile));
-		Assert.assertFalse(client.put(path, testFile)); // File already exists.
-		Assert.assertTrue(client.exists(path));
-		Assert.assertEquals(contents.length(), client.getMetadata(path).getLength());
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testDelete() throws IOException {
+        String path = BASEDIR + "foo.dat";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertTrue(client.touch(path));
+        Assert.assertTrue(client.exists(path));
+        Assert.assertTrue(client.delete(path, false));
+        Assert.assertFalse(client.exists(path));
+    }
 
-		// Now let's get it.
-		Assert.assertTrue(client.get(path, outputFile));
-		Assert.assertEquals(contents, new Scanner(outputFile).nextLine());
-	}
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testDeleteContainer() throws IOException {
+        String path = BASEDIR + "bar";
+        Assert.assertFalse(client.exists(path));
+        Assert.assertFalse(client.delete(path, false));
+        Assert.assertTrue(client.makedir(path));
+        Assert.assertTrue(client.delete(path, false));
 
-	/**
-	 * Regression test: make sure that we can get the metadata of the root
-	 * directory.
-	 * 
-	 * @throws IOException
-	 */
-	@Test
-	public void testRootdir() throws IOException {
-		FileMetadata meta = client.getMetadata("/");
-		Assert.assertEquals("/", meta.getKey());
-		Assert.assertTrue(meta.isContainer());
-	}
+        Assert.assertTrue(client.makedir(path));
+        Assert.assertTrue(client.touch(path + "/foo.dat"));
+        boolean exceptionRaised = false;
+        try {
+            client.delete(path, false);
+        } catch (IOException e) {
+            exceptionRaised = true;
+        }
+        Assert.assertTrue(exceptionRaised);
+    }
 
-	/**
-	 * Make sure that path are html escaped.
-	 */
-	@Test
-	public void testEscape() throws IOException {
-		String path = BASEDIR + "test%bar<quux>";
-		Assert.assertTrue(client.touch(path));
-		Assert.assertTrue(client.exists(path));
-		Assert.assertTrue(client.delete(path, false));
-	}
-	
-	/**
-	 * Make sure we support special chars in filenames
-	 * @throws IOException
-	 */
-	@Test
-	public void testSpecialCharInFileNames() throws IOException {
-		String path = BASEDIR + "Encyclopædia";
-		Assert.assertTrue(client.touch(path));
-		Assert.assertTrue(client.exists(path));
-		Assert.assertTrue(client.delete(path, false));
-	}
-	
-	private void testSetMetadataValue(String path) throws IOException {
-	       Assert.assertTrue(client.setMetadata(path, "foo", "bar"));
-	        Assert.assertEquals("bar", client.getMetadataValue(path, "foo"));
-	        Assert.assertTrue(client.setMetadata(path, "foo", "cat"));
-	        Assert.assertEquals("cat", client.getMetadataValue(path, "foo"));
-	        
-	        // Test some failure scenarios.
-	        
-	        // Setting metadata on a file that does not exist.
-	        boolean failed = false;
-	        try {
-	            client.setMetadata(path + "donotexist", "foo", "bar");
-	        } catch (FileNotFoundException e) {
-	            failed = true;
-	        }
-	        Assert.assertTrue(failed);
-	        
-	        // Getting metadata on a file that does not exist.
-	        failed = false;
-	        try {
-	            client.getMetadataValue(path + "donotexists", "foo");
-	        } catch (FileNotFoundException e) {
-	            failed = true;
-	        }
-	        Assert.assertTrue(failed);
-	        
-	        // Getting metadata on a file that does exist, but the metadata key
-	        // is not present.
-	        Assert.assertNull(client.getMetadataValue(path, "notexist"));
-	}
-	
-	/**
-	 * Make sure we can update an object metadata.
-	 * @throws IOException
-	 */
-	@Test
-	public void testSetMetadataObjectValue() throws IOException {
-	    String path = BASEDIR + "testmeta";
-	    Assert.assertTrue(client.touch(path));
-	    testSetMetadataValue(path);
-	}
-	
-	/**
+    /**
+     * @throws IOException
+     */
+    @Test
+    public void testPutAndGet() throws IOException {
+        String path = BASEDIR + "testPut";
+        File testFile = File.createTempFile("tempfile", "testPut");
+        File outputFile = File.createTempFile("tempfile", "testGet");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
+        final String contents = "This is a test file that is going to be sent out.";
+        writer.write(contents);
+        writer.close();
+        Assert.assertFalse(client.get(path, outputFile));
+        Assert.assertTrue(client.put(path, testFile));
+        Assert.assertFalse(client.put(path, testFile)); // File already exists.
+        Assert.assertTrue(client.exists(path));
+        Assert.assertEquals(contents.length(), client.getMetadata(path)
+                .getLength());
+
+        // Now let's get it.
+        Assert.assertTrue(client.get(path, outputFile));
+        Assert.assertEquals(contents, new Scanner(outputFile).nextLine());
+    }
+
+    /**
+     * Regression test: make sure that we can get the metadata of the root
+     * directory.
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testRootdir() throws IOException {
+        FileMetadata meta = client.getMetadata("/");
+        Assert.assertEquals("/", meta.getKey());
+        Assert.assertTrue(meta.isContainer());
+    }
+
+    /**
+     * Make sure that path are html escaped.
+     */
+    @Test
+    public void testEscape() throws IOException {
+        String path = BASEDIR + "test%bar<quux>";
+        Assert.assertTrue(client.touch(path));
+        Assert.assertTrue(client.exists(path));
+        Assert.assertTrue(client.delete(path, false));
+    }
+
+    /**
+     * Make sure we support special chars in filenames
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testSpecialCharInFileNames() throws IOException {
+        String path = BASEDIR + "Encyclop��dia";
+        Assert.assertTrue(client.touch(path));
+        Assert.assertTrue(client.exists(path));
+        Assert.assertTrue(client.delete(path, false));
+    }
+
+    private void testSetMetadataValue(String path) throws IOException {
+        Assert.assertTrue(client.setMetadata(path, "foo", "bar"));
+        Assert.assertEquals("bar", client.getMetadataValue(path, "foo"));
+        Assert.assertTrue(client.setMetadata(path, "foo", "cat"));
+        Assert.assertEquals("cat", client.getMetadataValue(path, "foo"));
+
+        // Test some failure scenarios.
+
+        // Setting metadata on a file that does not exist.
+        boolean failed = false;
+        try {
+            client.setMetadata(path + "donotexist", "foo", "bar");
+        } catch (FileNotFoundException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+
+        // Getting metadata on a file that does not exist.
+        failed = false;
+        try {
+            client.getMetadataValue(path + "donotexists", "foo");
+        } catch (FileNotFoundException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+
+        // Getting metadata on a file that does exist, but the metadata key
+        // is not present.
+        Assert.assertNull(client.getMetadataValue(path, "notexist"));
+    }
+
+    /**
+     * Make sure we can update an object metadata.
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testSetMetadataObjectValue() throws IOException {
+        String path = BASEDIR + "testmeta";
+        Assert.assertTrue(client.touch(path));
+        testSetMetadataValue(path);
+    }
+
+    /**
      * Make sure we can update a container metadata.
+     * 
      * @throws IOException
      */
     @Test
@@ -846,5 +849,5 @@ public class CdmiClientTest {
         Assert.assertTrue(client.makedir(path));
         testSetMetadataValue(path);
     }
-	
+
 }

@@ -75,6 +75,7 @@ import com.scality.cdmi.api.RetryStrategy;
  */
 public class CdmiConnector {
     private static final String[] OBJECTTYPE = new String[] { "objectType" };
+    private static final String[] METADATA = new String[] { "metadata" };
     public static final Log LOG = LogFactory.getLog(CdmiConnector.class);
     private RequestFactory requestFactory;
     private RequestFactory nonCdmiRequestFactory;
@@ -494,15 +495,9 @@ public class CdmiConnector {
         }
     }
 
-    public HttpResponse getMetadataValue(String path, String key)
+    public HttpResponse getMetadata(String path)
             throws CdmiConnectionException {
-        try {
-            HttpGet get = requestFactory.newGet(path,
-                    String.format("metadata:%s", key));
-            return stubbornExecute(get);
-        } catch (CdmiConfigurationException e) {
-            throw new CdmiConnectionException(e);
-        }
+        return readMetadata(path, METADATA);
     }
 
     private void debugRequest(HttpRequest request) {

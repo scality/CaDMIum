@@ -48,8 +48,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import com.scality.cdmi.api.CdmiConnectionException;
 import com.scality.cdmi.connector.CdmiConnector;
-import com.scality.cdmi.connector.CdmiTypes;
-import com.scality.cdmi.impl.utils.ParsingUtils;
 
 /**
  * 
@@ -60,16 +58,11 @@ import com.scality.cdmi.impl.utils.ParsingUtils;
  * 
  */
 public class CdmiMetadataReader {
-    private static final String[] OBJECT_TYPE = { "objectType" };
-    private static final String[] CONTAINER_FIELD_NAMES = { "metadata",
-            "objectName", "objectType", "objectID", "parentURI",
-            "capabilitiesURI" };
-    private static final String[] DATA_OBJECT_FIELD_NAMES = { "metadata",
+    private static final String[] META_FIELD_NAMES = { "metadata",
             "valuetransferencoding", "objectName", "objectType", "objectID",
             "parentURI", "capabilitiesURI" };
 
     private CdmiConnector conn;
-    private ParsingUtils parser;
 
     /**
      * Constructor
@@ -78,7 +71,6 @@ public class CdmiMetadataReader {
      */
     public CdmiMetadataReader(CdmiConnector conn) {
         this.conn = conn;
-        this.parser = new ParsingUtils();
     }
 
     /**
@@ -90,25 +82,12 @@ public class CdmiMetadataReader {
     public CdmiMetadata readMetadata(String path)
             throws CdmiConnectionException, FileNotFoundException {
         // First get the object type.
-        HttpResponse response = conn.readMetadata(path, OBJECT_TYPE);
+        HttpResponse response = conn.readMetadata(path, META_FIELD_NAMES);
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
             EntityUtils.consumeQuietly(response.getEntity());
             throw new FileNotFoundException(path + " does not exist");
         }
-        String objectType = readObjectType(response);
-        if (CdmiTypes.CDMI_CONTAINER.equals(objectType)) {
-            return extractMetadata(conn.readMetadata(path,
-                    CONTAINER_FIELD_NAMES));
-        } else if (CdmiTypes.CDMI_OBJECT.equals(objectType)) {
-            return extractMetadata(conn.readMetadata(path,
-                    DATA_OBJECT_FIELD_NAMES));
-        } else {
-            // FIXME: Allow reading other types.
-            throw new UnsupportedOperationException(
-                    "Only containers and data objects are "
-                            + "supported for reading metadata information; got "
-                            + objectType);
-        }
+        return extractMetadata(response);
     }
 
     public String readMetadataValue(HttpResponse response, String key)
@@ -129,17 +108,6 @@ public class CdmiMetadataReader {
         } catch (IOException e) {
             throw new CdmiConnectionException(e);
         }
-    }
-
-    private String readObjectType(HttpResponse response)
-            throws CdmiConnectionException {
-        try {
-            return parser.extractField(
-                    EntityUtils.toString(response.getEntity()), "objectType");
-        } catch (IOException e) {
-            throw new CdmiConnectionException(e);
-        }
-
     }
 
     private CdmiMetadata extractMetadata(HttpResponse response)

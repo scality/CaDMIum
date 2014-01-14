@@ -140,9 +140,6 @@ public class CdmiClientImpl implements CdmiClient {
 
     @Override
     public boolean touch(String key) throws IOException {
-        if (exists(key)) {
-            return false; // File already exists.
-        }
         HttpResponse response = connector.createEmptyObjectNonCdmi(key);
         EntityUtils.consumeQuietly(response.getEntity());
         return HttpStatus.SC_CREATED == response.getStatusLine()
@@ -197,10 +194,12 @@ public class CdmiClientImpl implements CdmiClient {
 
     @Override
     public boolean delete(String key, boolean recursive) throws IOException {
-        if (!exists(key)) {
+        FileMetadata metadata;
+        try {
+            metadata = getMetadata(key);
+        } catch (FileNotFoundException e) {
             return false;
         }
-        FileMetadata metadata = getMetadata(key);
         if (metadata.isContainer() && !key.endsWith("/")) {
             key += "/";
         }
@@ -399,13 +398,10 @@ public class CdmiClientImpl implements CdmiClient {
     @Override
     public String getMetadataValue(String key, String metakey)
             throws IOException {
-        if (!exists(key)) {
-            throw new FileNotFoundException(key);
-        }
-        HttpResponse response = connector.getMetadataValue(key, metakey);
+        HttpResponse response = connector.getMetadata(key);
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
             EntityUtils.consumeQuietly(response.getEntity());
-            return null;  // No such metadata key.
+            throw new FileNotFoundException(key);
         }
         return metadatareader.readMetadataValue(response, metakey);
     }
