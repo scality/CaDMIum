@@ -311,24 +311,26 @@ public class CdmiClientTest {
         Assert.assertEquals(finalstring, new String(buff, 0, pos));
 
         // Now try to write over.
-        out = client.write(path, 6L);
-        String replace = "replace";
-        out.write(replace.getBytes());
-        out.close();
-
-        // Meta is unchanged
-        meta = client.getMetadata(path);
-        Assert.assertEquals(pos, meta.getLength());
-        Assert.assertFalse(meta.isContainer());
-        Assert.assertEquals(path, meta.getKey());
-
-        // Read again
-        is = client.open(path);
-        buff = new byte[pos];
-        Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
-        is.close();
-        Assert.assertEquals("thisisreplaceringadditional", new String(buff, 0,
-                pos));
+        // This does not work: we cannot write at an arbitrary location in a file,
+        // we always truncate and append.
+//        out = client.write(path, 6L);
+//        String replace = "replace";
+//        out.write(replace.getBytes());
+//        out.close();
+//
+//        // Meta is unchanged
+//        meta = client.getMetadata(path);
+//        Assert.assertEquals(pos, meta.getLength());
+//        Assert.assertFalse(meta.isContainer());
+//        Assert.assertEquals(path, meta.getKey());
+//
+//        // Read again
+//        is = client.open(path);
+//        buff = new byte[pos];
+//        Assert.assertEquals(pos, readAllContentsToBuffer(is, buff));
+//        is.close();
+//        Assert.assertEquals("thisisreplaceringadditional", new String(buff, 0,
+//                pos));
     }
 
     /**
@@ -444,6 +446,7 @@ public class CdmiClientTest {
         out.close();
 
         String dest_path = BASEDIR + "bar.bat2";
+        client.touch(dest_path);
         out = client.write(dest_path, 0);
         InputStream in = client.open(path);
         byte buf[] = new byte[teststring.length()];
@@ -737,6 +740,7 @@ public class CdmiClientTest {
     /**
      * @throws IOException
      */
+    @SuppressWarnings("resource")
     @Test
     public void testPutAndGet() throws IOException {
         String path = BASEDIR + "testPut";

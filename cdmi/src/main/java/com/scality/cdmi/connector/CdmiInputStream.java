@@ -75,10 +75,10 @@ public class CdmiInputStream extends InputStream {
     public CdmiInputStream(String path, CdmiConnector conn, long startPos, int length)
             throws CdmiConnectionException, FileNotFoundException {
         this.connector = conn;
-        this.path = path;
         this.pos_in_target = startPos;
         CdmiMetadataReader metareader = new CdmiMetadataReader(this.connector);
         CdmiMetadata meta = metareader.readMetadata(path);
+        this.path = "cdmi_objectid/" + meta.getObjectID();
         if (length > 0) {
             this.final_pos = startPos + length;
             if (this.final_pos > meta.getSize()) {

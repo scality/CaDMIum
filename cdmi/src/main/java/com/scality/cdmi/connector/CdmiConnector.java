@@ -62,13 +62,21 @@ import com.scality.cdmi.api.RetryStrategy;
  * {@link EntityUtils#consume(org.apache.http.HttpEntity)} on how to free the
  * resources associated with a request.
  * 
- * Example use (delete): CdmiConnector connector = new CdmiConnector(
- * RequestFactory.newCdmiFactory( URI.create("http://localhost:80", "1.0.2")),
- * new DefaultHttpClient(), new RetryStrategy()); HttpResponse response =
- * connector.delete("/path/to/my/container");
- * EntityUtils.consume(response.getEntity()); int statusCode =
- * response.getStatusLine().getStatusCode(); return statusCode ==
- * HttpStatus.SC_NO_CONTENT;
+ * Example use (delete):
+ * 
+ * <pre>
+ * {@code
+ *  CdmiConnector connector = new CdmiConnector(
+ *      RequestFactory.newCdmiFactory(
+ *          URI.create("http://localhost:80", "1.0.2")),
+ *      new DefaultHttpClient(),
+ *      new RetryStrategy());
+ *  HttpResponse response = connector.delete("/path/to/my/container");
+ *  EntityUtils.consume(response.getEntity());
+ *  int statusCode = response.getStatusLine().getStatusCode();
+ *  return statusCode == HttpStatus.SC_NO_CONTENT;
+ * }
+ * </pre>
  * 
  * @author ziad.bizri@ezako.com for Scality
  * 
@@ -85,12 +93,14 @@ public class CdmiConnector {
 
     /**
      * Constructor
+     * 
      * @param factory
      * @param httpClient
      * @param retryStrategy
      * @param multiThreaded
      */
-    public CdmiConnector(RequestFactory factory, HttpClient httpClient, RetryStrategy retryStrategy, boolean multiThreaded) {
+    public CdmiConnector(RequestFactory factory, HttpClient httpClient,
+            RetryStrategy retryStrategy, boolean multiThreaded) {
         this.requestFactory = factory;
         this.nonCdmiRequestFactory = factory.newNonCdmiFactory();
         this.httpClient = httpClient;
@@ -102,15 +112,16 @@ public class CdmiConnector {
      * @return true if multi-threaded, false otherwise
      */
     public boolean isMultiThreaded() {
-		return multiThreaded;
-	}
+        return multiThreaded;
+    }
 
-	/**
-	 * @param request
-	 * @return
-	 * @throws CdmiConnectionException
-	 */
-	private HttpResponse stubbornExecute(HttpUriRequest request) throws CdmiConnectionException {
+    /**
+     * @param request
+     * @return
+     * @throws CdmiConnectionException
+     */
+    private HttpResponse stubbornExecute(HttpUriRequest request)
+            throws CdmiConnectionException {
         int status = -1;
         HttpResponse response = null;
         int i = retryStrategy.getMaxRetries();
@@ -135,7 +146,8 @@ public class CdmiConnector {
             status = response.getStatusLine().getStatusCode();
         } while (HttpStatus.SC_INTERNAL_SERVER_ERROR == status && --i > 0);
         if (-1 == status) {
-            throw new CdmiConnectionException("Cannot connect to server. All requests timed out.");
+            throw new CdmiConnectionException(
+                    "Cannot connect to server. All requests timed out.");
         } else if (HttpStatus.SC_INTERNAL_SERVER_ERROR == status) {
             throw new CdmiConnectionException(
                     "Can't seem to get any response from server. Got response "
@@ -146,6 +158,7 @@ public class CdmiConnector {
 
     /**
      * Common operations.
+     * 
      * @return
      * @throws CdmiConnectionException
      */
@@ -172,13 +185,16 @@ public class CdmiConnector {
 
     /**
      * Simple container operations.
+     * 
      * @param containerPath
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse createContainer(String containerPath) throws CdmiConnectionException {
+    public HttpResponse createContainer(String containerPath)
+            throws CdmiConnectionException {
         try {
-            HttpPut put = requestFactory.newPut(CdmiTypes.CDMI_CONTAINER, containerPath).build();
+            HttpPut put = requestFactory.newPut(CdmiTypes.CDMI_CONTAINER,
+                    containerPath).build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -190,7 +206,8 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse listContainer(String containerPath) throws CdmiConnectionException {
+    public HttpResponse listContainer(String containerPath)
+            throws CdmiConnectionException {
         try {
             HttpGet get = requestFactory.newGet(containerPath, "children");
             return stubbornExecute(get);
@@ -205,11 +222,14 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse moveContainer(String srcContainerPath, String destContainerPath)
-            throws CdmiConnectionException {
+    public HttpResponse moveContainer(String srcContainerPath,
+            String destContainerPath) throws CdmiConnectionException {
         try {
-            HttpPut put = requestFactory.newPut(CdmiTypes.CDMI_CONTAINER, destContainerPath)
-                    .addBody("move", RequestFactory.URIEscapeString(srcContainerPath)).build();
+            HttpPut put = requestFactory
+                    .newPut(CdmiTypes.CDMI_CONTAINER, destContainerPath)
+                    .addBody("move",
+                            RequestFactory.URIEscapeString(srcContainerPath))
+                    .build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -260,7 +280,8 @@ public class CdmiConnector {
     public HttpResponse readMetadata(String path, String[] metadatafields)
             throws CdmiConnectionException {
         try {
-            HttpGet get = requestFactory.newGet(path, concatFieldNames(metadatafields));
+            HttpGet get = requestFactory.newGet(path,
+                    concatFieldNames(metadatafields));
             return stubbornExecute(get);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -269,6 +290,7 @@ public class CdmiConnector {
 
     /**
      * Create an empty object
+     * 
      * @param dataObjectPath
      * @param binary
      * @return
@@ -279,11 +301,13 @@ public class CdmiConnector {
         try {
             HttpPut put;
             if (binary) {
-                put = requestFactory.newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
+                put = requestFactory
+                        .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
                         .addContents(new byte[] {}).build();
             } else {
-                put = requestFactory.newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath).addContents("")
-                        .build();
+                put = requestFactory
+                        .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
+                        .addContents("").build();
             }
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
@@ -299,13 +323,13 @@ public class CdmiConnector {
     public HttpResponse createEmptyObjectNonCdmi(String dataObjectPath)
             throws CdmiConnectionException {
         try {
-            HttpPut put = nonCdmiRequestFactory.newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
+            HttpPut put = nonCdmiRequestFactory
+                    .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
                     .addContents(new byte[0]).build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
         }
-
     }
 
     /**
@@ -317,8 +341,11 @@ public class CdmiConnector {
     public HttpResponse copyObject(String srcObjectPath, String destObjectPath)
             throws CdmiConnectionException {
         try {
-            HttpPut put = requestFactory.newPut(CdmiTypes.CDMI_OBJECT, destObjectPath)
-                    .addBody("copy", RequestFactory.URIEscapeString(srcObjectPath)).build();
+            HttpPut put = requestFactory
+                    .newPut(CdmiTypes.CDMI_OBJECT, destObjectPath)
+                    .addBody("copy",
+                            RequestFactory.URIEscapeString(srcObjectPath))
+                    .build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -334,8 +361,11 @@ public class CdmiConnector {
     public HttpResponse moveObject(String srcObjectPath, String destObjectPath)
             throws CdmiConnectionException {
         try {
-            HttpPut put = requestFactory.newPut(CdmiTypes.CDMI_OBJECT, destObjectPath)
-                    .addBody("move", RequestFactory.URIEscapeString(srcObjectPath)).build();
+            HttpPut put = requestFactory
+                    .newPut(CdmiTypes.CDMI_OBJECT, destObjectPath)
+                    .addBody("move",
+                            RequestFactory.URIEscapeString(srcObjectPath))
+                    .build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -345,7 +375,7 @@ public class CdmiConnector {
             throw new CdmiConnectionException(e);
         }
     }
-    
+
     /**
      * @param dataObjectPath
      * @param offset
@@ -353,10 +383,11 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse readObject(String dataObjectPath, long offset, long length)
-            throws CdmiConnectionException {
+    public HttpResponse readObject(String dataObjectPath, long offset,
+            long length) throws CdmiConnectionException {
         try {
-            HttpGet get = requestFactory.newGetWithRange(dataObjectPath, offset, length);
+            HttpGet get = requestFactory.newGetWithRange(dataObjectPath,
+                    offset, length);
             return stubbornExecute(get);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -370,10 +401,11 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse readObjectNonCdmi(String dataObjectPath, long offset, long length)
-            throws CdmiConnectionException {
+    public HttpResponse readObjectNonCdmi(String dataObjectPath, long offset,
+            long length) throws CdmiConnectionException {
         try {
-            HttpGet get = nonCdmiRequestFactory.newGetWithRange(dataObjectPath, offset, length);
+            HttpGet get = nonCdmiRequestFactory.newGetWithRange(dataObjectPath,
+                    offset, length);
             return stubbornExecute(get);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -388,12 +420,12 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse updateObject(String dataObjectPath, long offset, long length,
-            byte[] binaryData) throws CdmiConnectionException {
+    public HttpResponse updateObject(String dataObjectPath, long offset,
+            long length, byte[] binaryData) throws CdmiConnectionException {
         try {
             HttpPut put = requestFactory
-                    .newPutWithRange(CdmiTypes.CDMI_OBJECT, dataObjectPath, offset, length)
-                    .addContents(binaryData).build();
+                    .newPutWithRange(CdmiTypes.CDMI_OBJECT, dataObjectPath,
+                            offset, length).addContents(binaryData).build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -408,12 +440,12 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse updateObject(String dataObjectPath, long offset, long length,
-            String utf8Data) throws CdmiConnectionException {
+    public HttpResponse updateObject(String dataObjectPath, long offset,
+            long length, String utf8Data) throws CdmiConnectionException {
         try {
             HttpPut put = requestFactory
-                    .newPutWithRange(CdmiTypes.CDMI_OBJECT, dataObjectPath, offset, length)
-                    .addContents(utf8Data).build();
+                    .newPutWithRange(CdmiTypes.CDMI_OBJECT, dataObjectPath,
+                            offset, length).addContents(utf8Data).build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -428,12 +460,12 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse updateObjectNonCdmi(String dataObjectPath, long offset, long length,
-            byte[] data) throws CdmiConnectionException {
+    public HttpResponse updateObjectNonCdmi(String dataObjectPath, long offset,
+            long length, byte[] data) throws CdmiConnectionException {
         try {
             HttpPut put = nonCdmiRequestFactory
-                    .newPutWithRange(CdmiTypes.CDMI_OBJECT, dataObjectPath, offset, length)
-                    .addContents(data).build();
+                    .newPutWithRange(CdmiTypes.CDMI_OBJECT, dataObjectPath,
+                            offset, length).addContents(data).build();
             return stubbornExecute(put);
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -445,7 +477,8 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse getObjectType(String path) throws CdmiConnectionException {
+    public HttpResponse getObjectType(String path)
+            throws CdmiConnectionException {
         return readMetadata(path, OBJECTTYPE);
     }
 
@@ -455,7 +488,8 @@ public class CdmiConnector {
      * @return
      * @throws CdmiConnectionException
      */
-    public HttpResponse userSpecificQuery(String key, String query) throws CdmiConnectionException {
+    public HttpResponse userSpecificQuery(String key, String query)
+            throws CdmiConnectionException {
         try {
             HttpGet get = requestFactory.newGet(key, query);
             return stubbornExecute(get);
@@ -467,15 +501,36 @@ public class CdmiConnector {
     /**
      * Scality specific operation for flushing out a data object.
      * 
-     * @param request
+     * @param dataObjectPath
+     * @param size
      */
-    public HttpResponse forceFlush(String dataObjectPath, long size)
+    public void forceFlushCdmi(String dataObjectPath, long size)
+            throws CdmiConnectionException {
+        try {
+            HttpPut put = requestFactory
+                    .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
+                    .addBody("truncate", String.valueOf(size)).build();
+            HttpResponse response = stubbornExecute(put);
+            EntityUtils.consumeQuietly(response.getEntity());
+        } catch (CdmiConfigurationException e) {
+            throw new CdmiConnectionException(e);
+        }
+    }
+
+    /**
+     * Scality specific operation for flushing out a data object.
+     * 
+     * @param dataObjectPath
+     * @param size
+     */
+    public void forceFlushNonCdmi(String dataObjectPath, long size)
             throws CdmiConnectionException {
         try {
             HttpPut put = nonCdmiRequestFactory
                     .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
                     .setHeader("X-Scal-Truncate", String.valueOf(size)).build();
-            return stubbornExecute(put);
+            HttpResponse response = stubbornExecute(put);
+            EntityUtils.consumeQuietly(response.getEntity());
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
         }
@@ -495,8 +550,7 @@ public class CdmiConnector {
         }
     }
 
-    public HttpResponse getMetadata(String path)
-            throws CdmiConnectionException {
+    public HttpResponse getMetadata(String path) throws CdmiConnectionException {
         return readMetadata(path, METADATA);
     }
 

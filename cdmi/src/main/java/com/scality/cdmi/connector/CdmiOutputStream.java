@@ -113,7 +113,6 @@ public class CdmiOutputStream extends OutputStream {
 		this.connector = connector;
 		this.maxPutSize = maxPutSize;
 		this.maxPutThreads = maxPutThreads;
-		this.path = path;
 		this.buffer = null;
 		this.pos_in_buffer = 0;
 		this.pos_in_target = offset;
@@ -129,6 +128,12 @@ public class CdmiOutputStream extends OutputStream {
 			executor = null;
 		}
 		metareader = new CdmiMetadataReader(this.connector);
+		try {
+		    CdmiMetadata meta = metareader.readMetadata(path);
+		    this.path = "cdmi_objectid/" + meta.getObjectID();
+		} catch (FileNotFoundException e) {
+		    throw new CdmiConnectionException(e);
+		}
 	}
 
 	/**
@@ -213,13 +218,14 @@ public class CdmiOutputStream extends OutputStream {
 					new ThreadPoolExecutor.CallerRunsPolicy());
 		}
 
-		try {
-			CdmiMetadata meta = metareader.readMetadata(path);
-			connector.forceFlush(path, meta.getSize());
-		} catch (FileNotFoundException e) {
+		//try {
+			// CdmiMetadata meta = metareader.readMetadata(path);
+		//System.out.println("Force flush " + path + " at pos " + pos_in_target);
+			connector.forceFlushCdmi(path, pos_in_target);
+		//} catch (FileNotFoundException e) {
 			// Hard to believe that it can happen.
-			throw new CdmiConnectionException(e);
-		}
+	//		throw new CdmiConnectionException(e);
+		//}
 	}
 
 	/**

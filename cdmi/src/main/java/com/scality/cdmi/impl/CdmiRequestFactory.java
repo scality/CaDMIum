@@ -59,14 +59,26 @@ public class CdmiRequestFactory extends RequestFactory {
         super(uri.getScheme(), uri.getHost(), uri.getPort());
         this.cdmiVersion = cdmiVersion;
     }
-    
+
+    /**
+     * @param uri
+     * @param nonCdmiUri
+     * @param cdmiVersion
+     */
+    public CdmiRequestFactory(URI uri, URI nonCdmiUri, String cdmiVersion) {
+        super(uri.getScheme(), uri.getHost(), uri.getPort(), nonCdmiUri
+                .getHost(), nonCdmiUri.getPort());
+        this.cdmiVersion = cdmiVersion;
+    }
+
     /**
      * @param scheme
      * @param host
      * @param port
      * @param cdmiVersion
      */
-    public CdmiRequestFactory(String scheme, String host, int port, String cdmiVersion) {
+    public CdmiRequestFactory(String scheme, String host, int port,
+            String cdmiVersion) {
         super(scheme, host, port);
         this.cdmiVersion = cdmiVersion;
     }
@@ -78,14 +90,15 @@ public class CdmiRequestFactory extends RequestFactory {
     }
 
     @Override
-    public PutRequestBuilder newPut(String containerType, String key, String query)
-            throws CdmiConfigurationException {
+    public PutRequestBuilder newPut(String containerType, String key,
+            String query) throws CdmiConfigurationException {
         if (!key.startsWith("/")) {
             key = "/" + key;
         }
         key = URIEscapeString(key);
         try {
-            HttpPut put = new HttpPut(new URI(scheme, null, host, port, key, query, null));
+            HttpPut put = new HttpPut(new URI(scheme, null, host, port, key,
+                    query, null));
             put.addHeader("Accept", containerType);
             put.addHeader("Content-Type", containerType);
             put.addHeader("X-CDMI-Specification-Version", cdmiVersion);
@@ -96,9 +109,10 @@ public class CdmiRequestFactory extends RequestFactory {
     }
 
     @Override
-    public PutRequestBuilder newPutWithRange(String containerType, String key, long offset,
-            long length) throws CdmiConfigurationException {
-        return newPut(containerType, key, String.format("value:%d-%d", offset, offset + length - 1));
+    public PutRequestBuilder newPutWithRange(String containerType, String key,
+            long offset, long length) throws CdmiConfigurationException {
+        return newPut(containerType, key,
+                String.format("value:%d-%d", offset, offset + length - 1));
     }
 
     @Override
@@ -114,7 +128,8 @@ public class CdmiRequestFactory extends RequestFactory {
         }
         key = URIEscapeString(key);
         try {
-            HttpGet get = new HttpGet(new URI(scheme, null, host, port, key, query, null));
+            HttpGet get = new HttpGet(new URI(scheme, null, host, port, key,
+                    query, null));
             get.addHeader("X-CDMI-Specification-Version", cdmiVersion);
             return get;
         } catch (URISyntaxException e) {
@@ -125,18 +140,19 @@ public class CdmiRequestFactory extends RequestFactory {
     @Override
     public HttpGet newGetWithRange(String key, long offset, long length)
             throws CdmiConfigurationException {
-        return newGet(key, String.format("value:%d-%d", offset, offset + length - 1));
+        return newGet(key,
+                String.format("value:%d-%d", offset, offset + length - 1));
     }
 
     @Override
-    public HttpDelete newDelete(String key)
-            throws CdmiConfigurationException {
+    public HttpDelete newDelete(String key) throws CdmiConfigurationException {
         if (!key.startsWith("/")) {
             key = "/" + key;
         }
         key = URIEscapeString(key);
         try {
-            HttpDelete delete = new HttpDelete(new URI(scheme, null, host, port, key, null, null));
+            HttpDelete delete = new HttpDelete(new URI(scheme, null, host,
+                    port, key, null, null));
             delete.addHeader("X-CDMI-Specification-Version", cdmiVersion);
             return delete;
         } catch (URISyntaxException e) {

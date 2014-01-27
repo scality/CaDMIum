@@ -64,6 +64,7 @@ public class CdmiClientPooledIntegrationTest extends CdmiClientTest {
         cm = CdmiConnectionManager.newPooledConnectionManager(
                 RequestFactory.newCdmiFactory(
                         URI.create(prop.getProperty("cdmi.server")),
+                        URI.create(prop.getProperty("non.cdmi.server")),
                         prop.getProperty("cdmi.version")),
                 new CdmiAuthScope(prop.getProperty("cdmi.authscope.host"),
                         Integer.parseInt(prop

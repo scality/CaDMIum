@@ -54,34 +54,46 @@ import com.scality.cdmi.api.RequestFactory;
  */
 public class Example {
     public static void main(String[] args) throws IOException, URISyntaxException {
-        if (args.length != 6) {
-            System.err
-                    .println("Usage: Example <uri> <version> <user> <password> <filename> <destination>");
-            return;
-        }
-
-        // Parse the arguments.
-        String uri = args[0];
-        String version = args[1];
-        String user = args[2];
-        String password = args[3];
-        String filename = args[4];
-        String destination = args[5];
-        
-        // Copy the file to the destination.
-        RequestFactory factory = RequestFactory.newCdmiFactory(new URI(uri), version);
+        RequestFactory factory = RequestFactory.newCdmiFactory(new URI("http://connectorc.ring5.devsca.com:81"), "1.0.1");
         CdmiConnectionManager cm = CdmiConnectionManager.newPooledConnectionManager(factory,
-                new CdmiAuthScope("localhost", 443), new CdmiCredentials(user, password));
+                new CdmiAuthScope("localhost", 443), new CdmiCredentials("foo", "bar"));
         CdmiClient client = cm.getClient();
-        InputStream in = client.open(destination);
-        OutputStream out = new FileOutputStream(new File(filename));
-        byte[] buffer = new byte[1 << 16];
-        int read;
-        while ((read = in.read(buffer)) != -1) {
-            out.write(buffer, 0, read);
-        }
-        out.close();
-        in.close();
+        client.delete("a/", true);
+        client.delete("b/", true);
+        client.delete("target/", true);
+        client.delete("tmp/", true);
+        client.delete("user/", true);
+
+
+//
+//        if (args.length != 6) {
+//            System.err
+//                    .println("Usage: Example <uri> <version> <user> <password> <filename> <destination>");
+//            return;
+//        }
+//
+//        // Parse the arguments.
+//        String uri = args[0];
+//        String version = args[1];
+//        String user = args[2];
+//        String password = args[3];
+//        String filename = args[4];
+//        String destination = args[5];
+//        
+//        // Copy the file to the destination.
+//        RequestFactory factory = RequestFactory.newCdmiFactory(new URI(uri), version);
+//        CdmiConnectionManager cm = CdmiConnectionManager.newPooledConnectionManager(factory,
+//                new CdmiAuthScope("localhost", 443), new CdmiCredentials(user, password));
+//        CdmiClient client = cm.getClient();
+//        InputStream in = client.open(destination);
+//        OutputStream out = new FileOutputStream(new File(filename));
+//        byte[] buffer = new byte[1 << 16];
+//        int read;
+//        while ((read = in.read(buffer)) != -1) {
+//            out.write(buffer, 0, read);
+//        }
+//        out.close();
+//        in.close();
         cm.shutdown();
     }
 }

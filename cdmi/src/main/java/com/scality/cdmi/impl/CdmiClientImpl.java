@@ -105,6 +105,7 @@ public class CdmiClientImpl implements CdmiClient {
         }
         FileInputStream is = new FileInputStream(file.getPath());
         BufferedInputStream buff = new BufferedInputStream(is);
+        touch(key);
         CdmiOutputStream os = new CdmiOutputStream(key, 0L, connector,
                 maxPutSize, maxPutThreads);
 
@@ -140,16 +141,20 @@ public class CdmiClientImpl implements CdmiClient {
 
     @Override
     public boolean touch(String key) throws IOException {
-        HttpResponse response = connector.createEmptyObjectNonCdmi(key);
+        HttpResponse response = connector.createEmptyObject(key, true);
         EntityUtils.consumeQuietly(response.getEntity());
-        return HttpStatus.SC_CREATED == response.getStatusLine()
-                .getStatusCode();
+        if (HttpStatus.SC_CREATED == response.getStatusLine()
+                .getStatusCode()) {
+            connector.forceFlushCdmi(key, 0);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean exists(String key) throws IOException {
         HttpResponse response = connector.getObjectType(key);
-        String result = EntityUtils.toString(response.getEntity());
+        String result = new String(EntityUtils.toByteArray(response.getEntity()));
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
             return false;
         }
@@ -322,8 +327,8 @@ public class CdmiClientImpl implements CdmiClient {
 
     private Iterable<String> getChildren(String key) throws IOException {
         HttpResponse response = connector.listContainer(key);
-        return Arrays.asList(parser.extractArray(
-                EntityUtils.toString(response.getEntity()), "children"));
+        return Arrays.asList(parser.extractArray(new String(
+                EntityUtils.toByteArray(response.getEntity())), "children"));
     }
 
     @Override
@@ -367,7 +372,7 @@ public class CdmiClientImpl implements CdmiClient {
         int status = response.getStatusLine().getStatusCode();
         if (status == HttpStatus.SC_OK && entity != null) {
             // If there is an entity, we know the operation succeeded.
-            return EntityUtils.toString(entity);
+            return new String(EntityUtils.toByteArray(entity));
         }
         return null;
     }
@@ -376,7 +381,7 @@ public class CdmiClientImpl implements CdmiClient {
     public boolean setMetadata(String key, String metakey, String metavalue)
             throws IOException {
         HttpResponse response = connector.getObjectType(key);
-        String result = EntityUtils.toString(response.getEntity());
+        String result = new String(EntityUtils.toByteArray(response.getEntity()));
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
             throw new FileNotFoundException(key);
         }
@@ -392,7 +397,12 @@ public class CdmiClientImpl implements CdmiClient {
         }
         EntityUtils.consumeQuietly(response.getEntity());
         StatusLine statusLine = response.getStatusLine();
-        return statusLine.getStatusCode() == HttpStatus.SC_NO_CONTENT;
+        if (statusLine.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
+            CdmiMetadata metadata = metadatareader.readMetadata(key);
+            connector.forceFlushCdmi(key, metadata.getSize());
+            return true;
+        }
+        return false;
     }
 
     @Override
