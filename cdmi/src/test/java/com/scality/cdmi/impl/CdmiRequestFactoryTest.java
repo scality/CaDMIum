@@ -37,6 +37,7 @@ import java.net.URI;
 
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.junit.Assert;
 import org.junit.Before;
@@ -155,4 +156,16 @@ public class CdmiRequestFactoryTest {
         Assert.assertEquals("http://foo.com:8080/foo/", delete.getURI().toString());
         Assert.assertEquals("6", delete.getFirstHeader("X-CDMI-Specification-Version").getValue());
     }
+    
+    /**
+     * Test a simple Head.
+     * 
+     * @throws CdmiConfigurationException
+     */
+    @Test
+    public void testHead() throws CdmiConfigurationException {
+        HttpHead head = factory.newHead("foo/");
+        Assert.assertEquals("http://foo.com:8080/foo/", head.getURI().toString());
+    }
+    
 }

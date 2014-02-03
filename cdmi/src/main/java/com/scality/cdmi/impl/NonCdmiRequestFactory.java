@@ -38,6 +38,7 @@ import java.net.URISyntaxException;
 
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 
 import com.scality.cdmi.api.CdmiConfigurationException;
@@ -125,7 +126,22 @@ public class NonCdmiRequestFactory extends RequestFactory {
     @Override
     public HttpDelete newDelete(String key) throws CdmiConfigurationException {
         throw new UnsupportedOperationException(
-                "Only put and get operations are supported for non=cdmi");
+                "Only put, get and head operations are supported for non-cdmi");
+    }
+    
+    @Override
+    public HttpHead newHead(String key) throws CdmiConfigurationException {
+        if (!key.startsWith("/")) {
+            key = "/" + key;
+        }
+        key = URIEscapeString(key);
+        try {
+            HttpHead head = new HttpHead(new URI(scheme, null, host, port, key,
+                    null, null));
+            return head;
+        } catch (URISyntaxException e) {
+            throw new CdmiConfigurationException(e);
+        }
     }
 
 }

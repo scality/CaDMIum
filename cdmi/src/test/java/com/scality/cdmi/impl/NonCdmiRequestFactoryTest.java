@@ -36,6 +36,7 @@ package com.scality.cdmi.impl;
 import java.net.URI;
 
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.junit.Assert;
 import org.junit.Before;
@@ -161,6 +162,17 @@ public class NonCdmiRequestFactoryTest {
             errorRaised = true;
         }
         Assert.assertTrue(errorRaised);
+    }
 
+
+    /**
+     * Test a simple Head.
+     * 
+     * @throws CdmiConfigurationException
+     */
+    @Test
+    public void testHead() throws CdmiConfigurationException {
+        HttpHead head = factory.newHead("foo/");
+        Assert.assertEquals("http://foo.com:8080/foo/", head.getURI().toString());
     }
 }

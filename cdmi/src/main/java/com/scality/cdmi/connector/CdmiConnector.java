@@ -45,6 +45,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -65,16 +66,15 @@ import com.scality.cdmi.api.RetryStrategy;
  * Example use (delete):
  * 
  * <pre>
- * {@code
- *  CdmiConnector connector = new CdmiConnector(
- *      RequestFactory.newCdmiFactory(
- *          URI.create("http://localhost:80", "1.0.2")),
- *      new DefaultHttpClient(),
- *      new RetryStrategy());
- *  HttpResponse response = connector.delete("/path/to/my/container");
- *  EntityUtils.consume(response.getEntity());
- *  int statusCode = response.getStatusLine().getStatusCode();
- *  return statusCode == HttpStatus.SC_NO_CONTENT;
+ * {
+ *     &#064;code
+ *     CdmiConnector connector = new CdmiConnector(
+ *             RequestFactory.newCdmiFactory(URI.create(&quot;http://localhost:80&quot;,
+ *                     &quot;1.0.2&quot;)), new DefaultHttpClient(), new RetryStrategy());
+ *     HttpResponse response = connector.delete(&quot;/path/to/my/container&quot;);
+ *     EntityUtils.consume(response.getEntity());
+ *     int statusCode = response.getStatusLine().getStatusCode();
+ *     return statusCode == HttpStatus.SC_NO_CONTENT;
  * }
  * </pre>
  * 
@@ -504,13 +504,12 @@ public class CdmiConnector {
      * @param dataObjectPath
      * @param size
      */
-    public void forceFlushCdmi(String dataObjectPath, long size)
+    public void forceFlushCdmi(String dataObjectPath)
             throws CdmiConnectionException {
         try {
-            HttpPut put = requestFactory
-                    .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
-                    .addBody("truncate", String.valueOf(size)).build();
-            HttpResponse response = stubbornExecute(put);
+            HttpHead head = requestFactory.newHead(dataObjectPath);
+            head.setHeader("X-Scal-Synchronize", "data");
+            HttpResponse response = stubbornExecute(head);
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);
@@ -523,13 +522,12 @@ public class CdmiConnector {
      * @param dataObjectPath
      * @param size
      */
-    public void forceFlushNonCdmi(String dataObjectPath, long size)
+    public void forceFlushNonCdmi(String dataObjectPath)
             throws CdmiConnectionException {
         try {
-            HttpPut put = nonCdmiRequestFactory
-                    .newPut(CdmiTypes.CDMI_OBJECT, dataObjectPath)
-                    .setHeader("X-Scal-Truncate", String.valueOf(size)).build();
-            HttpResponse response = stubbornExecute(put);
+            HttpHead head = nonCdmiRequestFactory.newHead(dataObjectPath);
+            head.setHeader("X-Scal-Synchronize", "data");
+            HttpResponse response = stubbornExecute(head);
             EntityUtils.consumeQuietly(response.getEntity());
         } catch (CdmiConfigurationException e) {
             throw new CdmiConnectionException(e);

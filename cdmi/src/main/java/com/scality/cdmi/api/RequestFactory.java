@@ -37,6 +37,7 @@ import java.net.URI;
 
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 
 import com.scality.cdmi.connector.PutRequestBuilder;
 import com.scality.cdmi.impl.CdmiRequestFactory;
@@ -48,7 +49,7 @@ import com.scality.cdmi.impl.NonCdmiRequestFactory;
  * @author ziad.bizri@ezako.com for Scality
  */
 public abstract class RequestFactory {
-	
+
     /**
      * The scheme used, e.g. "http".
      */
@@ -241,6 +242,19 @@ public abstract class RequestFactory {
      *             if there was any issue during the creation of the request.
      */
     public abstract HttpDelete newDelete(String key)
+            throws CdmiConfigurationException;
+
+    /**
+     * Get a {@link HttpHead} request for sending a request to the CDMI
+     * repository.
+     * 
+     * @param key
+     *            the name of the resource in the CDMI repository
+     * @return a {@link HttpHead} request
+     * @throws CdmiConfigurationException
+     *             if there was any issue during the creation of the request.
+     */
+    public abstract HttpHead newHead(String key)
             throws CdmiConfigurationException;
 
     /**

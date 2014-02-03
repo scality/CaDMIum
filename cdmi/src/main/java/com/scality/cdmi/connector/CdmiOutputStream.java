@@ -218,14 +218,7 @@ public class CdmiOutputStream extends OutputStream {
 					new ThreadPoolExecutor.CallerRunsPolicy());
 		}
 
-		//try {
-			// CdmiMetadata meta = metareader.readMetadata(path);
-		//System.out.println("Force flush " + path + " at pos " + pos_in_target);
-			connector.forceFlushCdmi(path, pos_in_target);
-		//} catch (FileNotFoundException e) {
-			// Hard to believe that it can happen.
-	//		throw new CdmiConnectionException(e);
-		//}
+		connector.forceFlushCdmi(path);
 	}
 
 	/**

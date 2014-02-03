@@ -38,6 +38,7 @@ import java.net.URISyntaxException;
 
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 
 import com.scality.cdmi.api.CdmiConfigurationException;
@@ -155,6 +156,21 @@ public class CdmiRequestFactory extends RequestFactory {
                     port, key, null, null));
             delete.addHeader("X-CDMI-Specification-Version", cdmiVersion);
             return delete;
+        } catch (URISyntaxException e) {
+            throw new CdmiConfigurationException(e);
+        }
+    }
+
+    @Override
+    public HttpHead newHead(String key) throws CdmiConfigurationException {
+        if (!key.startsWith("/")) {
+            key = "/" + key;
+        }
+        key = URIEscapeString(key);
+        try {
+            HttpHead head = new HttpHead(new URI(scheme, null, host, port, key,
+                    null, null));
+            return head;
         } catch (URISyntaxException e) {
             throw new CdmiConfigurationException(e);
         }

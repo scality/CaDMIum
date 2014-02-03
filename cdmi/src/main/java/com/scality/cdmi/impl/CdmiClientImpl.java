@@ -145,7 +145,7 @@ public class CdmiClientImpl implements CdmiClient {
         EntityUtils.consumeQuietly(response.getEntity());
         if (HttpStatus.SC_CREATED == response.getStatusLine()
                 .getStatusCode()) {
-            connector.forceFlushCdmi(key, 0);
+            connector.forceFlushCdmi(key);
             return true;
         }
         return false;
@@ -398,8 +398,7 @@ public class CdmiClientImpl implements CdmiClient {
         EntityUtils.consumeQuietly(response.getEntity());
         StatusLine statusLine = response.getStatusLine();
         if (statusLine.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
-            CdmiMetadata metadata = metadatareader.readMetadata(key);
-            connector.forceFlushCdmi(key, metadata.getSize());
+            connector.forceFlushCdmi(key);
             return true;
         }
         return false;
