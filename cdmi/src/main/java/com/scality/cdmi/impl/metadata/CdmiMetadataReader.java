@@ -101,7 +101,7 @@ public class CdmiMetadataReader {
                     || root.get("metadata").get(key) == null) {
                 return null;
             } else {
-                return root.get("metadata").get(key).getValueAsText();
+                return root.get("metadata").get(key).getTextValue();
             }
         } catch (JsonParseException e) {
             throw new CdmiConnectionException(e);
