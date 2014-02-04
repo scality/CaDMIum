@@ -218,7 +218,7 @@ public class CdmiOutputStream extends OutputStream {
 					new ThreadPoolExecutor.CallerRunsPolicy());
 		}
 
-		connector.forceFlushCdmi(path);
+		connector.forceFlushNonCdmi(path);
 	}
 
 	/**
