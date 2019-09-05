@@ -47,7 +47,7 @@
 	</developers>
 
 	<properties>
-		<jettyVersion>8.1.11.v20130520</jettyVersion>
+		<jettyVersion>9.3.24.v20180605</jettyVersion>
 		<javaCompilerVersion>1.6</javaCompilerVersion>
 		<javaRuntimeVersion>1.7</javaRuntimeVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
